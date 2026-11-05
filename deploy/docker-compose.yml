@@ -1,0 +1,42 @@
+services:
+  # Local MQTT broker
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mqtt-broker
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    networks:
+      - mqtt
+    configs:
+      - source: mosquitto.conf
+        target: /mosquitto/config/mosquitto.conf
+
+  # Netgear LTE modem status bridge
+  netgear-lte2mqtt:
+    image: ghcr.io/obatiuk/netgear-lte2mqtt:latest
+    container_name: netgear-lte2mqtt
+    restart: unless-stopped
+    networks:
+      - mqtt
+    environment:
+      - MODEM_HOST=192.168.5.1
+      - MODEM_PASSWORD=your_admin_password
+      - MQTT_HOST=mosquitto
+    depends_on:
+      - mosquitto
+
+networks:
+  mqtt:
+    driver: bridge
+
+# Inline Mosquitto configuration for local bridge network
+configs:
+  mosquitto.conf:
+    content: |
+      listener 1883
+      allow_anonymous true
+      log_dest stdout
+      log_timestamp true
+      connection_messages true
+      log_type all

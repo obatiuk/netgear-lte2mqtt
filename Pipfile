@@ -1,0 +1,23 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+# Runtime dependencies
+[packages]
+aiohttp = "==3.14.5"
+eternalegypt = "==0.0.18"
+paho-mqtt = "==2.1.0"
+
+# Development, linting, type-checking, and testing dependencies
+[dev-packages]
+pip-audit = "*"
+pyright = "*"
+pytest = "*"
+pytest-asyncio = "*"
+pytest-mock = "*"
+pytest-cov = "*"
+ruff = "*"
+
+[requires]
+python_version = "3.14"

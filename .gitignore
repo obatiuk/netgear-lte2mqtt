@@ -1,0 +1,23 @@
+# Python & packaging
+src/netgear_lte2mqtt/__pycache__/
+tests/__pycache__/
+tests/netgear_lte2mqtt/__pycache__/
+.venv/
+requirements.txt
+Pipfile.lock
+
+# Test & linter caches
+.pytest_cache/
+.ruff_cache/
+.coverage
+
+# Environment configuration
+.env
+
+# IDE
+netgear-lte2mqtt.iml
+
+# AI agents
+.agents/
+conversations/
+opencode.jsonc

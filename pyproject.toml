@@ -1,0 +1,28 @@
+# Ruff linter and formatter configuration
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "PIE", "PERF", "RUF", "BLE", "C4", "RET", "PT"]
+ignore = ["SIM300"]
+
+[tool.ruff.format]
+indent-style = "space"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+# Pyright static type checker configuration
+[tool.pyright]
+include = [
+    "src",
+    "tests"
+]
+extraPaths = ["src"]
+venv = ".venv"
+venvPath = "."
+
+# Pytest test runner configuration
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
