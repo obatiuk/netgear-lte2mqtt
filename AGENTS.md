@@ -29,11 +29,6 @@ Service-oriented daemon that polls a Netgear LTE modem via `eternalegypt` and pu
 
 ### Constraints & Quirks
 
-- **Toolchain**: Python 3.14, `pipenv`, Ruff (format + lint), Pyright (type checking), Pytest, and Podman.
-- **Execution**: Run as a module via `python -m netgear_lte2mqtt.main` with `PYTHONPATH=src`.
-- **Test Layout**: Mirror `src/netgear_lte2mqtt/` under `tests/netgear_lte2mqtt/`, keep `__init__.py` in both
-  `tests/` and `tests/netgear_lte2mqtt/` so `pytest` resolves test modules without shadowing `src/netgear_lte2mqtt/`,
-  and define all `pytest` fixtures in `tests/conftest.py`.
 - **Type Checking**: `eternalegypt` has incomplete type stubs; keep the `reportCallIssue` Pyright ignore comment on
   `Modem()` instantiation.
 - **Container Networking**: Supports standard bridge networking (as in `deploy/docker-compose.yml`) or `--network host`
@@ -93,17 +88,27 @@ Optional:
 
 - **Minimal Changes**: Do not refactor code unless necessary. Keep changes minimal, focused, and easy to review.
 - **Preserve Existing Comments**: Never remove existing comments in source or test files unless explicitly required.
-- **Concise, Human Docs**: Write short, direct documentation. Avoid verbose or AI-sounding filler.
-- **No Magic Numbers**: Never use raw numeric literals in loops, retries, or timeouts; define named constants or
-  configuration properties.
-- **Ignore Files**: List only exact paths that exist in the project in `.gitignore` and `.dockerignore`; never add
-  speculative or wildcard ignores.
+- **Concise, Human Docs**: Write the shortest possible documentation that achieves the exact same outcome; prefer brief
+  directive explanations over large code blocks and avoid verbose or AI-sounding filler.
+- **Ignore Files**: Keep `.gitignore` and `.dockerignore` minimal and specific to the project; never add speculative or
+  wildcard ignores.
 - **No PII or Carrier Names**: Never include personal identifiable information (names, emails, local IPs, hostnames, or
   specific cellular carrier names) in repository files, excluding the GitHub handle (`obatiuk`).
 - **Plain-Text Markdown Output**: Always provide `.md` files in unbroken 4-backtick plain-text blocks for one-click
   copying.
 - **Markdown Formatting**: Wrap all `.md` lines at a maximum of 120 characters and only use square brackets for links,
   task checkboxes (`- [x]` / `- [ ]`), or GitHub callouts (`> [!NOTE]`).
-- **Commit Messages**: Omit the first summary/subject line. Start directly with brief bullet points and end with
-  `Co-authored-by: Gemini <noreply@google.com>`.
-- **Maintain `AGENTS.md`**: Always record new project conventions, constraints, and user feedback in `AGENTS.md`.
+- **Commit Messages**:
+  - Omit the first summary/subject line.
+  - Output commit messages for user review rather than running `git commit` or `git reset` directly unless explicitly
+    requested.
+  - Keep commit messages brief—at most 8 lines total (including the blank line and `Co-authored-by` trailer).
+  - Describe changes in plain, human-understandable language rather than referencing code symbols, function/method
+    names, or file paths unless strictly necessary.
+  - Format every bullet point with a literal leading dash (`\- ` in Markdown output so the chat UI renders `- ` instead
+    of an indented `•` list bullet) and trim all leading, trailing, and redundant whitespace on every line.
+  - Always include `Co-authored-by: Gemini <gemini@google.com>` at the end, and **never wrap commit messages in fenced
+    code blocks (` ``` `) or `<details>` tags**—always display them directly as plain un-fenced text so the chat UI
+    never folds them.
+- **Maintain `AGENTS.md` & Skills**: Record project-specific conventions, constraints, and feedback in `AGENTS.md`;
+  route language or coding conventions to the corresponding global skill in `~/.agents/skills/` after user approval.

@@ -5,7 +5,7 @@
 .dockerignore
 
 # Python & packaging
-src/netgear_lte2mqtt/__pycache__/
+__pycache__/
 .venv/
 Pipfile
 Pipfile.lock
@@ -16,19 +16,14 @@ Makefile
 deploy/
 docker/
 tests/
+.coverage
 .pytest_cache/
 .ruff_cache/
-.coverage
 
-# Environment & documentation
+# Environment, docs & IDE
 .env
 AGENTS.md
 LICENSE
 README.md
 TODO.md
-
-# IDE & AI agents
 netgear-lte2mqtt.iml
-.agents/
-conversations/
-opencode.jsonc

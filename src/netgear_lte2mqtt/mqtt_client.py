@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 MQTT_QOS = 1
 MQTT_SUCCESS_RC = 0
+MQTT_KEEPALIVE_SECONDS = 60
 MIN_RECONNECT_DELAY = 1
 BACKOFF_BASE = 2
 MAX_BACKOFF_SECONDS = 60
@@ -41,6 +42,7 @@ class MqttClient:
             protocol=MQTTv5,
             callback_api_version=CallbackAPIVersion.VERSION2,
         )
+        self._client.connect_timeout = float(config.MQTT_CONNECTION_TIMEOUT)
         self._client.on_connect = self._on_connect
         self._client.on_disconnect = self._on_disconnect
         self._client.reconnect_delay_set(min_delay=MIN_RECONNECT_DELAY, max_delay=MAX_BACKOFF_SECONDS)
@@ -113,10 +115,11 @@ class MqttClient:
                     f"Connecting to MQTT broker at {self._config.MQTT_HOST}:{self._config.MQTT_PORT} "
                     f"(client_id={self._config.MQTT_CLIENT_ID})..."
                 )
-                self._client.connect(
+                await asyncio.to_thread(
+                    self._client.connect,
                     self._config.MQTT_HOST,
                     self._config.MQTT_PORT,
-                    self._config.MQTT_CONNECTION_TIMEOUT,
+                    MQTT_KEEPALIVE_SECONDS,
                 )
                 logger.info(f"Connected to MQTT broker at {self._config.MQTT_HOST}:{self._config.MQTT_PORT}")
                 break
@@ -137,7 +140,7 @@ class MqttClient:
         self._client.loop_start()
         self._connected = True
 
-    def publish_status(self, status: dict[str, Any], wait: bool = False) -> bool:
+    def publish_status(self, status: dict[str, Any], *, wait: bool = False) -> bool:
         """Publishes the modem status dictionary as JSON to the configured MQTT topic."""
         payload = json.dumps(status) if status else EMPTY_STATUS_PAYLOAD
 

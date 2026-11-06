@@ -19,6 +19,7 @@ class TestMonitorApp:
     @patch("netgear_lte2mqtt.app.MqttClient")
     @patch("netgear_lte2mqtt.app.ModemClient")
     async def test_run_cycle(self, mock_modem_cls, mock_mqtt_cls, mock_config):
+        # Verify full poll-and-publish lifecycle and clean disconnect on stop
         # Setup mocks
         mock_mqtt = mock_mqtt_cls.return_value
         mock_mqtt.connect = AsyncMock()  # IMPORTANT: connect is async
@@ -55,6 +56,7 @@ class TestMonitorApp:
     async def test_run_resolves_topic_placeholders_without_double_poll(
         self, mock_modem_cls, mock_mqtt_cls, mock_config
     ):
+        # Verify dynamic MQTT_TOPIC placeholders resolve before MQTT connect and reuse initial status
         # Setup mocks with placeholders in MQTT_TOPIC
         placeholder_config = replace(mock_config, MQTT_TOPIC="netgear-lte2mqtt/{model}/{serial_number}/state")
         mock_mqtt = mock_mqtt_cls.return_value
@@ -195,6 +197,7 @@ class TestMonitorApp:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.app.MqttClient")
     async def test_bootstrap_failure(self, mock_mqtt_cls, mock_config):
+        # Verify critical MQTT connection failure propagates during startup
         # Simulate critical connection error during bootstrap
         mock_mqtt = mock_mqtt_cls.return_value
         mock_mqtt.connect = AsyncMock(side_effect=RuntimeError("MQTT Connection Failed"))
@@ -207,6 +210,7 @@ class TestMonitorApp:
     @patch("netgear_lte2mqtt.app.MqttClient")
     @patch("netgear_lte2mqtt.app.ModemClient")
     async def test_run_modem_unavailable(self, mock_modem_cls, mock_mqtt_cls, mock_config):
+        # Verify unreachable modem publishes empty status payload to clear stale state
         mock_mqtt = mock_mqtt_cls.return_value
         mock_mqtt.connect = AsyncMock()
         mock_mqtt.publish_status.return_value = True
@@ -229,6 +233,7 @@ class TestMonitorApp:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.app.MqttClient")
     async def test_cleanup(self, mock_mqtt_cls, mock_config):
+        # Verify _cleanup disconnects the MQTT client
         mock_mqtt = mock_mqtt_cls.return_value
         app = MonitorApp(mock_config)
 

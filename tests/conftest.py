@@ -1,5 +1,6 @@
 import random
 import string
+from typing import Any
 from unittest.mock import MagicMock
 
 import pytest
@@ -8,12 +9,12 @@ from netgear_lte2mqtt.config import Config
 
 
 @pytest.fixture(scope="session")
-def helpers():
+def helpers() -> type[Any]:
     """Provides shared random string generators for test fixtures."""
 
     class TestHelpers:
         @staticmethod
-        def random_string(length=8):
+        def random_string(length: int = 8) -> str:
             letters = string.ascii_letters + string.digits
             return "".join(random.choice(letters) for _ in range(length))
 
@@ -21,7 +22,7 @@ def helpers():
 
 
 @pytest.fixture
-def base_env(helpers):
+def base_env(helpers: Any) -> dict[str, str]:
     """Provides the minimal required environment variables for configuration tests."""
     return {
         "MODEM_HOST": helpers.random_string(15),
@@ -31,7 +32,7 @@ def base_env(helpers):
 
 
 @pytest.fixture
-def mock_config(helpers):
+def mock_config(helpers: Any) -> Config:
     """Provides a validated Config instance with randomized hosts and credentials."""
     return Config(
         MODEM_HOST=helpers.random_string(15),
@@ -53,6 +54,6 @@ def mock_config(helpers):
 
 
 @pytest.fixture
-def mock_session():
+def mock_session() -> MagicMock:
     """Provides a mocked aiohttp ClientSession for modem client tests."""
     return MagicMock()

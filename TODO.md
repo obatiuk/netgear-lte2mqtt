@@ -1,21 +1,28 @@
 # TODO
 
-## Backlog
+## Open
 
-- [ ] Client certificate authentication (mTLS) for MQTT
-- [ ] Rate-limited retries for failed runtime MQTT publishes
-- [ ] Config reload on `SIGHUP` without container restart
+None.
 
 ## Done
 
-- [x] Rename project and package to `netgear-lte2mqtt` (`ModemClient`, `MqttClient`)
-- [x] Publish full modem status (including `model` and `serial_number`) as JSON via `eternalegypt`
-- [x] Support and strictly validate `{model}` and `{serial_number}` placeholders in `MQTT_TOPIC`
-- [x] Configure MQTT Last Will, MQTT v5 `MessageExpiryInterval`, and synchronous `{}` publish on disconnect
-- [x] Re-login automatically when the modem session expires and survive modem reboots during startup
-- [x] Add HTTP timeout for modem requests and capped exponential backoff for MQTT connections
-- [x] Require `MODEM_HOST`, `MODEM_PASSWORD`, and `MQTT_HOST`, validate all settings, and mask passwords in logs
-- [x] Support optional MQTT username/password authentication and TLS 1.2/1.3 (`PROTOCOL_TLS_CLIENT`)
-- [x] Minimize memory footprint with `__slots__`, pre-allocated MQTT properties, and stripped `pip` in container runtime
-- [x] Multi-stage rootless Python 3.14 container build with built-in `--healthcheck` and Git tag versioning
+### v0.0.2
+
+- [x] Separate MQTT socket `connect_timeout` from `MQTT_KEEPALIVE_SECONDS` and run `connect()` via `asyncio.to_thread`
+- [x] Simplify `.gitignore` and `.dockerignore` and trim generic Python conventions from `AGENTS.md`
+
+### v0.0.1
+
+- [x] Add GitHub Actions CI/GHCR release workflow, `deploy/docker-compose.yml`, `.env` templates, and docs
 - [x] Unit tests (99% coverage), expanded Ruff rule set, Pyright type checking, and strict `pip-audit`
+- [x] Multi-stage rootless Python 3.14 container build with built-in `--healthcheck` and Git tag versioning
+- [x] Minimize memory footprint with `__slots__`, pre-allocated MQTT properties, and stripped `pip` in container runtime
+- [x] Log modem state transitions and connection recovery at `INFO` while suppressing repeated unreachable warnings
+- [x] Support optional MQTT username/password authentication and TLS 1.2/1.3 (`PROTOCOL_TLS_CLIENT`)
+- [x] Require `MODEM_HOST`, `MODEM_PASSWORD`, and `MQTT_HOST`, validate all settings and `LOG_LEVEL`, and mask passwords
+- [x] Add HTTP timeout for modem requests and capped exponential backoff for MQTT connections
+- [x] Re-login automatically when the modem session expires and survive modem reboots during startup
+- [x] Configure MQTT Last Will, MQTT v5 `MessageExpiryInterval`, and synchronous `{}` publish on disconnect
+- [x] Support and strictly validate `{model}` and `{serial_number}` placeholders in `MQTT_TOPIC`
+- [x] Publish full modem status (including `model` and `serial_number`) as JSON via `eternalegypt`
+- [x] Rename project and package to `netgear-lte2mqtt` (`ModemClient`, `MqttClient`)

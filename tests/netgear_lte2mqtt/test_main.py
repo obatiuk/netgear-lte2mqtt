@@ -11,6 +11,7 @@ class TestMain:
     @patch("netgear_lte2mqtt.main.get_config")
     @patch("netgear_lte2mqtt.main.MonitorApp")
     async def test_main_success(self, mock_app_cls, mock_get_config):
+        # Verify main bootstraps config, sets log level, and runs MonitorApp
         # Setup mocks
         mock_config = MagicMock()
         mock_config.LOG_LEVEL = "DEBUG"
@@ -30,6 +31,7 @@ class TestMain:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.main.get_config")
     async def test_main_config_error(self, mock_get_config):
+        # Verify startup exceptions are logged and exit with code 1
         # Simulate config failure during bootstrap
         mock_get_config.side_effect = Exception("Config Error")
 

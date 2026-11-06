@@ -5,23 +5,33 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from netgear_lte2mqtt.mqtt_client import EXPIRY_INTERVAL_MULTIPLIER, PUBLISH_TIMEOUT_SECONDS, MqttClient
+from netgear_lte2mqtt.mqtt_client import (
+    EXPIRY_INTERVAL_MULTIPLIER,
+    MQTT_KEEPALIVE_SECONDS,
+    PUBLISH_TIMEOUT_SECONDS,
+    MqttClient,
+)
 
 
 class TestMqttClient:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     async def test_connect_success(self, mock_client_cls, mock_config):
-        # Verify Last Will configuration, broker connection, and background network loop start
+        # Regression: Verify socket connect_timeout is set from MQTT_CONNECTION_TIMEOUT while
+        # connect() receives MQTT_KEEPALIVE_SECONDS as keepalive via asyncio.to_thread
         mock_client = mock_client_cls.return_value
-        client = MqttClient(mock_config)
+        custom_config = replace(mock_config, MQTT_CONNECTION_TIMEOUT=15)
+        client = MqttClient(custom_config)
 
-        assert client.topic == mock_config.MQTT_TOPIC
+        assert client.topic == custom_config.MQTT_TOPIC
+        assert mock_client.connect_timeout == 15.0
         await client.connect()
 
-        mock_client.will_set.assert_called_once_with(mock_config.MQTT_TOPIC, payload=json.dumps({}), qos=1, retain=True)
+        mock_client.will_set.assert_called_once_with(
+            custom_config.MQTT_TOPIC, payload=json.dumps({}), qos=1, retain=True
+        )
         mock_client.connect.assert_called_once_with(
-            mock_config.MQTT_HOST, mock_config.MQTT_PORT, mock_config.MQTT_CONNECTION_TIMEOUT
+            custom_config.MQTT_HOST, custom_config.MQTT_PORT, MQTT_KEEPALIVE_SECONDS
         )
         mock_client.loop_start.assert_called_once()
 
@@ -38,6 +48,7 @@ class TestMqttClient:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     async def test_connect_retry_then_success(self, mock_client_cls, mock_config):
+        # Verify transient broker connection failures retry with backoff and succeed
         mock_client = mock_client_cls.return_value
         # Fail twice, then succeed
         mock_client.connect.side_effect = [Exception("Fail"), Exception("Fail"), None]
@@ -84,6 +95,7 @@ class TestMqttClient:
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_publish_status_fail(self, mock_client_cls, mock_config):
+        # Verify non-zero publish return code returns False without raising
         # Simulate MQTT publish failure (return code != 0)
         mock_client = mock_client_cls.return_value
         mock_client.publish.return_value = (1, "Failure")
@@ -95,6 +107,7 @@ class TestMqttClient:
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_publish_exception_returns_false(self, mock_client_cls, mock_config):
+        # Verify exceptions raised by client.publish are caught and return False
         # Test that publishing doesn't crash if client raises an exception
         mock_client = mock_client_cls.return_value
         mock_client.publish.side_effect = RuntimeError("Socket closed")
@@ -106,6 +119,7 @@ class TestMqttClient:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     async def test_disconnect_waits_for_empty_publish_only_when_connected(self, mock_client_cls, mock_config):
+        # Verify disconnect is a no-op before connect and waits for empty status publish when connected
         mock_client = mock_client_cls.return_value
         mock_msg_info = MagicMock()
         mock_msg_info.__getitem__.side_effect = lambda idx: 0 if idx == 0 else None
@@ -126,8 +140,8 @@ class TestMqttClient:
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_callbacks_log_without_error(self, mock_client_cls, mock_config):
-        client = MqttClient(mock_config)
         # Verify connect and disconnect callbacks handle both success and error reason codes
+        client = MqttClient(mock_config)
         client._on_connect(None, None, None, 0)
         client._on_connect(None, None, None, 135)
         client._on_disconnect(None, None, None, 0)
