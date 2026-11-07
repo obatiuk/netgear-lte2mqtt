@@ -21,8 +21,8 @@ services:
       - mqtt
     environment:
       - MODEM_HOST=192.168.5.1
-      - MODEM_PASSWORD=your_admin_password
-      - MQTT_HOST=mosquitto
+      - MODEM_PASSWORD=<your_admin_password>
+      - MQTT_HOST=mqtt-broker
     depends_on:
       - mosquitto
 

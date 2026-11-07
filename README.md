@@ -37,20 +37,21 @@ seconds.
 
 ```ini
 MODEM_HOST=192.168.5.1
-MODEM_PASSWORD=your_admin_password
-MQTT_HOST=localhost
+MODEM_PASSWORD=<your_admin_password>
+MQTT_HOST=<mqtt_host>
 ```
 
-3. **Run the container** (or see [deploy/docker-compose.yml](deploy/docker-compose.yml) for a Compose setup):
+3. **Run the container**:
 
 ```bash
 docker run -d \
   --name netgear-lte2mqtt \
   --restart unless-stopped \
-  --network host \
   --env-file .env \
   ghcr.io/obatiuk/netgear-lte2mqtt:latest
 ```
+
+(or see [deploy/docker-compose.yml](deploy/docker-compose.yml) for a test run using a local `MQTT` instance).
 
 Every `60` seconds, the service publishes a retained `JSON` payload to `netgear-lte2mqtt/state`:
 
@@ -93,7 +94,7 @@ Use `mosquitto_sub` and `jq -e` to check whether wired internet is active. This 
 `LTE` backup, the modem is unreachable (`{}`), the service is stopped, or the `MQTT` broker is down:
 
 ```bash
-if mosquitto_sub -h localhost -t netgear-lte2mqtt/state -C 1 -W 5 2>/dev/null \
+if mosquitto_sub -h <mqtt_host> -t netgear-lte2mqtt/state -C 1 -W 5 2>/dev/null \
   | jq -e '.wire_connected == true' >/dev/null 2>&1; then
   echo "Wired internet active, starting backup..."
 else

@@ -32,8 +32,8 @@ Service-oriented daemon that polls a Netgear `LTE` modem via `eternalegypt` and 
 
 - **Type Checking**: `eternalegypt` has incomplete type stubs; keep the `reportCallIssue` `Pyright` ignore comment on
   `Modem()` instantiation.
-- **Container Networking**: Supports standard bridge networking (as in `deploy/docker-compose.yml`) or `--network host`
-  when `MQTT_HOST=localhost`.
+- **Container Networking**: Uses default container networking for standalone `docker run`, a `mqtt` bridge network
+  (`MQTT_HOST=mqtt-broker`) in `deploy/docker-compose.yml`, and `--network host` in `make docker-start`.
 - **Local Container Testing**: `deploy/docker-compose.yml` is a self-contained consumer Compose example (`mosquitto` +
   `ghcr.io` image + inline minimal `environment`), while `make docker-start` runs an inline `eclipse-mosquitto`
   container and the local `$(BUILD_TAG)` image with `.env`.

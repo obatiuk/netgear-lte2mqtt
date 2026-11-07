@@ -15,6 +15,8 @@ permissions:
 
 env:
   NODE_OPTIONS: "--no-deprecation"
+  PIP_CACHE_DIR: "/tmp/pip-cache"
+  PIPENV_CACHE_DIR: "/tmp/pip-cache"
   GIT_CONFIG_COUNT: "2"
   GIT_CONFIG_KEY_0: "advice.defaultBranchName"
   GIT_CONFIG_VALUE_0: "false"

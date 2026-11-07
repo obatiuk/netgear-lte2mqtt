@@ -8,6 +8,8 @@ None.
 
 ### dev
 
+- [x] Share the `pip` cache directory with `pipenv` in `GitHub Actions` to speed up dependency installation
+- [x] Use default container networking and explicit configuration placeholders in documentation and templates
 - [x] Skip waiting for `MQTT` publish completion on failed publishes, eliminate real-time sleeps in unit tests,
   annotate all test signatures, require keyword-only boolean modifier flags, and anonymize sample serial numbers
 - [x] Upgrade `GitHub Actions` to `Node 24`, enable `pip` caching, publish `:dev` images on `master` pushes, and
