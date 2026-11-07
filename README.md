@@ -1,5 +1,11 @@
 # netgear-lte2mqtt
 
+[![CI](https://github.com/obatiuk/netgear-lte2mqtt/actions/workflows/release.yml/badge.svg)](../../actions)
+[![Release](https://img.shields.io/github/v/tag/obatiuk/netgear-lte2mqtt?label=release)](../../releases)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue.svg)](https://www.python.org/)
+[![Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+
 Small service that polls a Netgear LTE modem and publishes its status to MQTT.
 
 ## Why It Exists

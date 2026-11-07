@@ -6,6 +6,11 @@ None.
 
 ## Done
 
+### Unreleased
+
+- [x] Upgrade GitHub Actions to Node 24, enable pip caching, and suppress CI and container build warnings
+- [x] Add CI status, release tag, Python version, code style, and license badges to project documentation
+
 ### v0.0.2
 
 - [x] Separate MQTT socket `connect_timeout` from `MQTT_KEEPALIVE_SECONDS` and run `connect()` via `asyncio.to_thread`

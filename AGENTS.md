@@ -112,3 +112,5 @@ Optional:
     never folds them.
 - **Maintain `AGENTS.md` & Skills**: Record project-specific conventions, constraints, and feedback in `AGENTS.md`;
   route language or coding conventions to the corresponding global skill in `~/.agents/skills/` after user approval.
+- **`TODO.md` Entries**: Write new `TODO.md` items in the same plain, human-understandable language as commit messages,
+  and never modify already-pushed entries.

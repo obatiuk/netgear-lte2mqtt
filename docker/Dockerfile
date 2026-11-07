@@ -11,7 +11,7 @@ WORKDIR /app
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
     python3 -m venv /opt/venv && \
-    /opt/venv/bin/pip install --no-compile -r requirements.txt && \
+    /opt/venv/bin/pip install --no-compile --disable-pip-version-check -r requirements.txt && \
     /opt/venv/bin/pip uninstall -y pip
 
 # Final hardened stage
