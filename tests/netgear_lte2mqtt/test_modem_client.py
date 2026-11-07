@@ -2,13 +2,14 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from netgear_lte2mqtt.config import Config
 from netgear_lte2mqtt.modem_client import MAX_STATUS_ATTEMPTS, STATUS_FIELDS, ModemClient
 
 
 class TestModemClient:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_login_success(self, mock_modem_cls, mock_config, mock_session):
+    async def test_login_success(self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock) -> None:
         # Verify login passes the configured modem password to eternalegypt
         mock_modem = mock_modem_cls.return_value
         mock_modem.login = AsyncMock()
@@ -20,7 +21,7 @@ class TestModemClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_login_failure(self, mock_modem_cls, mock_config, mock_session):
+    async def test_login_failure(self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock) -> None:
         # Verify authentication errors propagate to the caller
         mock_modem = mock_modem_cls.return_value
         mock_modem.login = AsyncMock(side_effect=RuntimeError("Auth failed"))
@@ -31,13 +32,15 @@ class TestModemClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_get_status_success(self, mock_modem_cls, mock_config, mock_session):
+    async def test_get_status_success(
+        self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock
+    ) -> None:
         # Verify status dictionary extraction and general.model fallback
         mock_modem = mock_modem_cls.return_value
         mock_result = MagicMock()
         mock_result.model = None
         mock_result.items = {"general.model": "LB1120"}
-        mock_result.serial_number = "4631730N01234"
+        mock_result.serial_number = "SN0000000000"
         mock_result.wire_connected = True
         mock_result.mobile_connected = False
         mock_result.upstream = "Wired"
@@ -50,7 +53,7 @@ class TestModemClient:
         assert status is not None
         assert set(status.keys()) == set(STATUS_FIELDS)
         assert status["model"] == "LB1120"
-        assert status["serial_number"] == "4631730N01234"
+        assert status["serial_number"] == "SN0000000000"
         assert status["wire_connected"] is True
         assert status["mobile_connected"] is False
         assert status["upstream"] == "Wired"
@@ -58,7 +61,9 @@ class TestModemClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_get_status_empty_response_triggers_relogin(self, mock_modem_cls, mock_config, mock_session):
+    async def test_get_status_empty_response_triggers_relogin(
+        self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock
+    ) -> None:
         # Verify empty wire_connected response triggers re-authentication and retry
         mock_modem = mock_modem_cls.return_value
         mock_modem.login = AsyncMock()
@@ -78,7 +83,9 @@ class TestModemClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_get_status_relogin_success(self, mock_modem_cls, mock_config, mock_session):
+    async def test_get_status_relogin_success(
+        self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock
+    ) -> None:
         # Verify exception during information() triggers re-authentication and retry
         mock_modem = mock_modem_cls.return_value
         mock_modem.login = AsyncMock()
@@ -96,7 +103,9 @@ class TestModemClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_get_status_error_when_relogin_fails(self, mock_modem_cls, mock_config, mock_session):
+    async def test_get_status_error_when_relogin_fails(
+        self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock
+    ) -> None:
         # Verify failed re-authentication aborts the poll and returns None
         mock_modem = mock_modem_cls.return_value
         mock_modem.information = AsyncMock(side_effect=Exception("API Error"))
@@ -109,7 +118,9 @@ class TestModemClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.modem_client.Modem")
-    async def test_get_status_error(self, mock_modem_cls, mock_config, mock_session):
+    async def test_get_status_error(
+        self, mock_modem_cls: MagicMock, mock_config: Config, mock_session: MagicMock
+    ) -> None:
         # Verify persistent API error after successful re-authentication returns None
         mock_modem = mock_modem_cls.return_value
         mock_modem.login = AsyncMock()

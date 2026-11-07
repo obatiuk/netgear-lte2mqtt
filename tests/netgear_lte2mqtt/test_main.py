@@ -10,7 +10,7 @@ class TestMain:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.main.get_config")
     @patch("netgear_lte2mqtt.main.MonitorApp")
-    async def test_main_success(self, mock_app_cls, mock_get_config):
+    async def test_main_success(self, mock_app_cls: MagicMock, mock_get_config: MagicMock) -> None:
         # Verify main bootstraps config, sets log level, and runs MonitorApp
         # Setup mocks
         mock_config = MagicMock()
@@ -30,7 +30,7 @@ class TestMain:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.main.get_config")
-    async def test_main_config_error(self, mock_get_config):
+    async def test_main_config_error(self, mock_get_config: MagicMock) -> None:
         # Verify startup exceptions are logged and exit with code 1
         # Simulate config failure during bootstrap
         mock_get_config.side_effect = Exception("Config Error")
@@ -48,7 +48,7 @@ class TestMain:
             (False, 1),
         ],
     )
-    async def test_main_healthcheck_flag(self, is_healthy, expected_exit_code):
+    async def test_main_healthcheck_flag(self, is_healthy: bool, expected_exit_code: int) -> None:
         # Verify --healthcheck exits with 0 when healthy and 1 when unhealthy
         with (
             patch("sys.argv", ["netgear_lte2mqtt.main", "--healthcheck"]),

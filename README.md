@@ -6,16 +6,16 @@
 [![Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Small service that polls a Netgear LTE modem and publishes its status to MQTT.
+Small service that polls a Netgear `LTE` modem and publishes its status to `MQTT`.
 
 ## Why It Exists
 
-My home network uses a Netgear LTE modem for automatic failover when wired internet drops. Because "unlimited"
+My home network uses a Netgear `LTE` modem for automatic failover when wired internet drops. Because "unlimited"
 cellular plans still have strict data caps, I need my automated `restic` backups (from my
 [.dotfiles](https://github.com/obatiuk/dotfiles)) to pause when running on cellular backup.
 
-Home Assistant has a Netgear LTE integration, but my full backup script shuts down Home Assistant before taking
-snapshots. This service runs standalone next to Mosquitto so backup scripts can check MQTT directly to see if wired
+Home Assistant has a Netgear `LTE` integration, but my full backup script shuts down Home Assistant before taking
+snapshots. This service runs standalone next to `Mosquitto` so backup scripts can check `MQTT` directly to see if wired
 internet is active.
 
 Supported models (via [eternalegypt](https://github.com/amelchio/eternalegypt)):
@@ -52,12 +52,12 @@ docker run -d \
   ghcr.io/obatiuk/netgear-lte2mqtt:latest
 ```
 
-Every `60` seconds, the service publishes a retained JSON payload to `netgear-lte2mqtt/state`:
+Every `60` seconds, the service publishes a retained `JSON` payload to `netgear-lte2mqtt/state`:
 
 ```json
 {
   "model": "LB1120",
-  "serial_number": "4631730N01234",
+  "serial_number": "SN0000000000",
   "wire_connected": true,
   "mobile_connected": false,
   "upstream": "Wired",
@@ -78,19 +78,19 @@ Every `60` seconds, the service publishes a retained JSON payload to `netgear-lt
 
 Key telemetry fields:
 
-- `wire_connected` / `mobile_connected`: Booleans indicating active WAN and LTE data bearers
-- `upstream`: Active WAN path (`Wired`, `Mobile`, or `LTE` depending on model and failover state)
+- `wire_connected` / `mobile_connected`: Booleans indicating active `WAN` and `LTE` data bearers
+- `upstream`: Active `WAN` path (`Wired`, `Mobile`, or `LTE` depending on model and failover state)
 - `radio_quality`: Signal quality percentage (`0` to `100`)
-- `rx_level` / `tx_level`: RSRP receive and transmit power in `dBm`
+- `rx_level` / `tx_level`: `RSRP` receive and transmit power in `dBm`
 - `usage`: Cellular data used in the current billing cycle in `bytes`
 
-If the modem becomes unreachable, or if the service stops or crashes (via synchronous shutdown publish, MQTT Last Will,
-and MQTT v5 message expiry), it publishes `{}` so consumers never act on stale status data.
+If the modem becomes unreachable, or if the service stops or crashes (via synchronous shutdown publish, `MQTT` Last
+Will, and `MQTT` v5 message expiry), it publishes `{}` so consumers never act on stale status data.
 
 ### Checking Connection Status from a Shell Script
 
 Use `mosquitto_sub` and `jq -e` to check whether wired internet is active. This check fails safely if the network is on
-LTE backup, the modem is unreachable (`{}`), the service is stopped, or the MQTT broker is down:
+`LTE` backup, the modem is unreachable (`{}`), the service is stopped, or the `MQTT` broker is down:
 
 ```bash
 if mosquitto_sub -h localhost -t netgear-lte2mqtt/state -C 1 -W 5 2>/dev/null \
@@ -105,7 +105,7 @@ fi
 
 See [deploy/.env.full.example](deploy/.env.full.example) for a complete template with all optional settings:
 
-- `MQTT_TOPIC`: MQTT topic to publish status, supports `{model}` and `{serial_number}` placeholders (default:
+- `MQTT_TOPIC`: `MQTT` topic to publish status, supports `{model}` and `{serial_number}` placeholders (default:
   `netgear-lte2mqtt/state`)
 - `MQTT_PUBLISH_INTERVAL`: Seconds between polls, minimum `1` (default: `60`)
 - `MQTT_PORT`: Broker port (default: `1883`)
@@ -114,9 +114,9 @@ See [deploy/.env.full.example](deploy/.env.full.example) for a complete template
 - `MQTT_PASSWORD`: Broker password, requires `MQTT_USERNAME` (default: empty)
 - `MQTT_CONNECTION_TIMEOUT`: Broker connection timeout in seconds, minimum `5` (default: `60`)
 - `MQTT_MAX_RETRIES`: Startup connection retries, `0` for unlimited (default: `5`)
-- `MQTT_TLS`: Enable TLS (`true`/`false`, default: `false`)
-- `MQTT_VALIDATE_CERT`: Verify broker TLS certificate (`true`/`false`, default: `false`)
-- `MQTT_CA_CERT_PATH`: Path to custom CA certificate file (default: empty, uses system CAs)
+- `MQTT_TLS`: Enable `TLS` (`true`/`false`, default: `false`)
+- `MQTT_VALIDATE_CERT`: Verify broker `TLS` certificate (`true`/`false`, default: `false`)
+- `MQTT_CA_CERT_PATH`: Path to custom `CA` certificate file (default: empty, uses system `CA`s)
 - `LOG_LEVEL`: Logging verbosity, case-insensitive (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`; default: `INFO`)
 
 > [!NOTE]

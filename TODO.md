@@ -6,10 +6,13 @@ None.
 
 ## Done
 
-### Unreleased
+### dev
 
-- [x] Upgrade GitHub Actions to Node 24, enable pip caching, and suppress CI and container build warnings
-- [x] Add CI status, release tag, Python version, code style, and license badges to project documentation
+- [x] Skip waiting for `MQTT` publish completion on failed publishes, eliminate real-time sleeps in unit tests,
+  annotate all test signatures, require keyword-only boolean modifier flags, and anonymize sample serial numbers
+- [x] Upgrade `GitHub Actions` to `Node 24`, enable `pip` caching, publish `:dev` images on `master` pushes, and
+  suppress `CI` and container build warnings
+- [x] Add `CI` status, release tag, `Python` version, code style, and license badges to project documentation
 
 ### v0.0.2
 

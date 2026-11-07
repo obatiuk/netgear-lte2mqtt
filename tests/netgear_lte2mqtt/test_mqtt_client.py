@@ -5,6 +5,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from netgear_lte2mqtt.config import Config
 from netgear_lte2mqtt.mqtt_client import (
     EXPIRY_INTERVAL_MULTIPLIER,
     MQTT_KEEPALIVE_SECONDS,
@@ -16,7 +17,7 @@ from netgear_lte2mqtt.mqtt_client import (
 class TestMqttClient:
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    async def test_connect_success(self, mock_client_cls, mock_config):
+    async def test_connect_success(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Regression: Verify socket connect_timeout is set from MQTT_CONNECTION_TIMEOUT while
         # connect() receives MQTT_KEEPALIVE_SECONDS as keepalive via asyncio.to_thread
         mock_client = mock_client_cls.return_value
@@ -36,7 +37,7 @@ class TestMqttClient:
         mock_client.loop_start.assert_called_once()
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    def test_auth_configured_when_username_present(self, mock_client_cls, mock_config):
+    def test_auth_configured_when_username_present(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify broker username and password credentials are set when configured
         mock_client = mock_client_cls.return_value
         auth_config = replace(mock_config, MQTT_USERNAME="broker_user", MQTT_PASSWORD="broker_password")
@@ -47,7 +48,7 @@ class TestMqttClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    async def test_connect_retry_then_success(self, mock_client_cls, mock_config):
+    async def test_connect_retry_then_success(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify transient broker connection failures retry with backoff and succeed
         mock_client = mock_client_cls.return_value
         # Fail twice, then succeed
@@ -61,7 +62,7 @@ class TestMqttClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    async def test_connect_max_retries_exceeded(self, mock_client_cls, mock_config):
+    async def test_connect_max_retries_exceeded(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify connection failure raises after exhausting configured retries
         mock_client = mock_client_cls.return_value
         mock_client.connect.side_effect = RuntimeError("Permanent Fail")
@@ -73,7 +74,7 @@ class TestMqttClient:
         assert mock_client.connect.call_count == 3
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    def test_publish_status_success(self, mock_client_cls, mock_config):
+    def test_publish_status_success(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify JSON payload, QoS 1, retain flag, and MQTT v5 MessageExpiryInterval property
         mock_client = mock_client_cls.return_value
         mock_client.publish.return_value = (0, None)  # Return code 0 for success
@@ -94,19 +95,22 @@ class TestMqttClient:
         )
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    def test_publish_status_fail(self, mock_client_cls, mock_config):
-        # Verify non-zero publish return code returns False without raising
+    def test_publish_status_fail(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
+        # Verify non-zero publish return code returns False without waiting for publish or raising
         # Simulate MQTT publish failure (return code != 0)
         mock_client = mock_client_cls.return_value
-        mock_client.publish.return_value = (1, "Failure")
+        mock_msg_info = MagicMock()
+        mock_msg_info.__getitem__.side_effect = lambda idx: 1 if idx == 0 else "Failure"
+        mock_client.publish.return_value = mock_msg_info
         client = MqttClient(mock_config)
 
-        # Should return False and not crash when publishing fails
-        published = client.publish_status({"wire_connected": True})
+        # Should return False and skip wait_for_publish when publishing fails
+        published = client.publish_status({"wire_connected": True}, wait=True)
         assert published is False
+        mock_msg_info.wait_for_publish.assert_not_called()
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    def test_publish_exception_returns_false(self, mock_client_cls, mock_config):
+    def test_publish_exception_returns_false(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify exceptions raised by client.publish are caught and return False
         # Test that publishing doesn't crash if client raises an exception
         mock_client = mock_client_cls.return_value
@@ -118,7 +122,9 @@ class TestMqttClient:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    async def test_disconnect_waits_for_empty_publish_only_when_connected(self, mock_client_cls, mock_config):
+    async def test_disconnect_waits_for_empty_publish_only_when_connected(
+        self, mock_client_cls: MagicMock, mock_config: Config
+    ) -> None:
         # Verify disconnect is a no-op before connect and waits for empty status publish when connected
         mock_client = mock_client_cls.return_value
         mock_msg_info = MagicMock()
@@ -139,7 +145,7 @@ class TestMqttClient:
         mock_client.disconnect.assert_called_once()
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    def test_callbacks_log_without_error(self, mock_client_cls, mock_config):
+    def test_callbacks_log_without_error(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify connect and disconnect callbacks handle both success and error reason codes
         client = MqttClient(mock_config)
         client._on_connect(None, None, None, 0)
@@ -148,7 +154,7 @@ class TestMqttClient:
         client._on_disconnect(None, None, None, 1)
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
-    def test_setup_tls_enabled(self, mock_client_cls, mock_config):
+    def test_setup_tls_enabled(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify TLS client protocol, custom CA certificate path, and certificate validation
         mock_client = mock_client_cls.return_value
         tls_config = replace(

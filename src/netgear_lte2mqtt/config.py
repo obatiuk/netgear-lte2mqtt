@@ -114,7 +114,7 @@ def _validate_mqtt_client_id(client_id: str) -> str:
     return cleaned
 
 
-def _validate_ca_cert_path(ca_cert_path: str, mqtt_tls: bool) -> str:
+def _validate_ca_cert_path(ca_cert_path: str, *, mqtt_tls: bool) -> str:
     """Validates that the custom CA certificate path points to an existing file when TLS is enabled."""
     cleaned = ca_cert_path.strip()
     if mqtt_tls and cleaned and not Path(cleaned).is_file():
@@ -150,12 +150,13 @@ def _parse_int(var_name: str, default: str, min_val: int, max_val: int | None = 
 
 def _parse_bool(s: str, error_msg: str) -> bool:
     """Parses a strict 'true' or 'false' boolean string."""
-    s_lower = s.strip().lower()
-    if s_lower == "true":
-        return True
-    if s_lower == "false":
-        return False
-    raise ConfigError(error_msg)
+    match s.strip().lower():
+        case "true":
+            return True
+        case "false":
+            return False
+        case _:
+            raise ConfigError(error_msg)
 
 
 def get_config() -> Config:
@@ -179,7 +180,7 @@ def get_config() -> Config:
     mqtt_validate_cert = _parse_bool(
         os.environ.get("MQTT_VALIDATE_CERT", "false"), "MQTT_VALIDATE_CERT must be boolean ('true' or 'false')."
     )
-    mqtt_ca_cert_path = _validate_ca_cert_path(os.environ.get("MQTT_CA_CERT_PATH", ""), mqtt_tls)
+    mqtt_ca_cert_path = _validate_ca_cert_path(os.environ.get("MQTT_CA_CERT_PATH", ""), mqtt_tls=mqtt_tls)
 
     return Config(
         MODEM_HOST=_validate_host(os.environ["MODEM_HOST"], "MODEM_HOST"),

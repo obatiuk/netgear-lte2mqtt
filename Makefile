@@ -121,8 +121,10 @@ docker-stop:
 docker-publish: docker-build
 	@$(DOCKER) tag $(BUILD_TAG) $(REGISTRY)/$(BUILD_TAG)
 	@$(DOCKER) push $(REGISTRY)/$(BUILD_TAG)
-	@$(DOCKER) tag $(BUILD_TAG) $(REGISTRY)/$(PROJECT_NAME):$(PUBLISH_TAG)
-	@$(DOCKER) push $(REGISTRY)/$(PROJECT_NAME):$(PUBLISH_TAG)
+	@if [ "$(BUILD_VERSION)" != "$(PUBLISH_TAG)" ]; then \
+		$(DOCKER) tag $(BUILD_TAG) $(REGISTRY)/$(PROJECT_NAME):$(PUBLISH_TAG); \
+		$(DOCKER) push $(REGISTRY)/$(PROJECT_NAME):$(PUBLISH_TAG); \
+	fi
 
 .PHONY: run-docker
 run-docker: docker-start

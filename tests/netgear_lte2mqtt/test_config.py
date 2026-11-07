@@ -1,9 +1,16 @@
 import os
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
 
-from netgear_lte2mqtt.config import MAX_CLIENT_ID_LENGTH, Config, ConfigError, get_config
+from netgear_lte2mqtt.config import (
+    MAX_CLIENT_ID_LENGTH,
+    Config,
+    ConfigError,
+    _validate_ca_cert_path,
+    get_config,
+)
 
 
 class TestConfig:
@@ -15,7 +22,7 @@ class TestConfig:
             "MQTT_HOST",
         ],
     )
-    def test_missing_required_env_vars(self, base_env, missing_var):
+    def test_missing_required_env_vars(self, base_env: dict[str, str], missing_var: str) -> None:
         # Verify missing any required environment variable raises ConfigError
         test_env = {k: v for k, v in base_env.items() if k != missing_var}
         with patch.dict(os.environ, test_env, clear=True):
@@ -23,7 +30,7 @@ class TestConfig:
                 get_config()
             assert missing_var in str(exc_info.value)
 
-    def test_returns_config_dataclass(self, base_env):
+    def test_returns_config_dataclass(self, base_env: dict[str, str]) -> None:
         # Verify required environment variables populate a Config instance
         with patch.dict(os.environ, base_env, clear=True):
             config = get_config()
@@ -32,7 +39,7 @@ class TestConfig:
             assert config.MODEM_PASSWORD == base_env["MODEM_PASSWORD"]
             assert config.MQTT_HOST == base_env["MQTT_HOST"]
 
-    def test_uses_defaults_for_optional_vars(self, base_env):
+    def test_uses_defaults_for_optional_vars(self, base_env: dict[str, str]) -> None:
         # Verify optional environment variables fall back to documented defaults
         with patch.dict(os.environ, base_env, clear=True):
             config = get_config()
@@ -49,10 +56,10 @@ class TestConfig:
             assert config.MQTT_MAX_RETRIES == 5
             assert config.LOG_LEVEL == "INFO"
 
-    def test_custom_values_override_defaults(self, base_env, tmp_path):
+    def test_custom_values_override_defaults(self, base_env: dict[str, str], tmp_path: Path) -> None:
         # Verify custom environment variables override all default settings
         cert_file = tmp_path / "ca.pem"
-        cert_file.write_text("dummy-cert")
+        cert_file.write_text("dummy-cert", encoding="utf-8")
         env = {
             **base_env,
             "MQTT_TOPIC": "netgear-lte2mqtt/{model}/{serial_number}/state",
@@ -103,7 +110,9 @@ class TestConfig:
             ("MQTT_MAX_RETRIES", "-1", "Must be at least 0"),
         ],
     )
-    def test_invalid_values_raise_config_error(self, base_env, var, value, expected_error):
+    def test_invalid_values_raise_config_error(
+        self, base_env: dict[str, str], var: str, value: str, expected_error: str
+    ) -> None:
         # Verify out-of-range integers, malformed hosts, and invalid credentials raise ConfigError
         env = {**base_env, var: value}
         with patch.dict(os.environ, env, clear=True):
@@ -119,7 +128,7 @@ class TestConfig:
             ("MQTT_TLS", "yes"),
         ],
     )
-    def test_invalid_boolean_raises_config_error(self, base_env, var, value):
+    def test_invalid_boolean_raises_config_error(self, base_env: dict[str, str], var: str, value: str) -> None:
         # Verify non-boolean strings for boolean flags raise ConfigError
         env = {**base_env, var: value}
         with patch.dict(os.environ, env, clear=True):
@@ -127,7 +136,7 @@ class TestConfig:
                 get_config()
             assert "boolean" in str(exc_info.value).lower()
 
-    def test_invalid_client_id_raises_config_error(self, base_env):
+    def test_invalid_client_id_raises_config_error(self, base_env: dict[str, str]) -> None:
         # Verify whitespace-only client ID is rejected
         env = {**base_env, "MQTT_CLIENT_ID": "   "}
         with patch.dict(os.environ, env, clear=True):
@@ -135,7 +144,7 @@ class TestConfig:
                 get_config()
             assert "non-empty string" in str(exc_info.value)
 
-    def test_mqtt_client_id_too_long(self, base_env):
+    def test_mqtt_client_id_too_long(self, base_env: dict[str, str]) -> None:
         # Verify client ID exceeding MAX_CLIENT_ID_LENGTH is rejected
         env = {**base_env, "MQTT_CLIENT_ID": "a" * (MAX_CLIENT_ID_LENGTH + 1)}
         with patch.dict(os.environ, env, clear=True):
@@ -156,7 +165,7 @@ class TestConfig:
             ("netgear/model}/state", "unbalanced braces"),
         ],
     )
-    def test_invalid_mqtt_topic(self, base_env, topic, expected_error):
+    def test_invalid_mqtt_topic(self, base_env: dict[str, str], topic: str, expected_error: str) -> None:
         # Verify topics with whitespace, wildcards, unsupported placeholders, or unbalanced braces fail
         env = {**base_env, "MQTT_TOPIC": topic}
         with patch.dict(os.environ, env, clear=True):
@@ -164,8 +173,11 @@ class TestConfig:
                 get_config()
             assert expected_error in str(exc_info.value)
 
-    def test_missing_ca_cert_file_when_tls_enabled(self, base_env):
-        # Verify nonexistent CA certificate file raises ConfigError when TLS is enabled
+    def test_missing_ca_cert_file_when_tls_enabled(self, base_env: dict[str, str]) -> None:
+        # Verify nonexistent CA certificate file raises ConfigError and requires keyword-only mqtt_tls flag
+        with pytest.raises(TypeError):
+            _validate_ca_cert_path("/nonexistent/path/ca.crt", True)  # pyright: ignore[reportCallIssue]
+
         env = {
             **base_env,
             "MQTT_TLS": "true",
@@ -186,7 +198,7 @@ class TestConfig:
             ("CRITICAL", "CRITICAL"),
         ],
     )
-    def test_log_level_is_case_insensitive(self, base_env, raw_level, expected_level):
+    def test_log_level_is_case_insensitive(self, base_env: dict[str, str], raw_level: str, expected_level: str) -> None:
         # Verify LOG_LEVEL accepts any casing and normalizes to uppercase
         env = {**base_env, "LOG_LEVEL": raw_level}
         with patch.dict(os.environ, env, clear=True):
@@ -194,7 +206,7 @@ class TestConfig:
             assert config.LOG_LEVEL == expected_level
 
     @pytest.mark.parametrize("bad_level", ["", "VERBOSE", "TRACE"])
-    def test_invalid_log_level_raises_config_error(self, base_env, bad_level):
+    def test_invalid_log_level_raises_config_error(self, base_env: dict[str, str], bad_level: str) -> None:
         # Verify unsupported log level names raise ConfigError
         env = {**base_env, "LOG_LEVEL": bad_level}
         with patch.dict(os.environ, env, clear=True):
@@ -202,7 +214,7 @@ class TestConfig:
                 get_config()
             assert "LOG_LEVEL" in str(exc_info.value)
 
-    def test_sanitize_masks_passwords(self, base_env):
+    def test_sanitize_masks_passwords(self, base_env: dict[str, str]) -> None:
         # Verify non-empty passwords are masked while empty optional passwords remain empty
         env = {**base_env, "MQTT_USERNAME": "mqtt-user", "MQTT_PASSWORD": "secret-mqtt-password"}
         with patch.dict(os.environ, env, clear=True):

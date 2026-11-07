@@ -2,7 +2,8 @@
 
 ## Architecture
 
-Service-oriented daemon that polls a Netgear LTE modem via `eternalegypt` and publishes JSON status telemetry to MQTT.
+Service-oriented daemon that polls a Netgear `LTE` modem via `eternalegypt` and publishes `JSON` status telemetry to
+`MQTT`.
 
 ```text
 ├── docker/
@@ -29,7 +30,7 @@ Service-oriented daemon that polls a Netgear LTE modem via `eternalegypt` and pu
 
 ### Constraints & Quirks
 
-- **Type Checking**: `eternalegypt` has incomplete type stubs; keep the `reportCallIssue` Pyright ignore comment on
+- **Type Checking**: `eternalegypt` has incomplete type stubs; keep the `reportCallIssue` `Pyright` ignore comment on
   `Modem()` instantiation.
 - **Container Networking**: Supports standard bridge networking (as in `deploy/docker-compose.yml`) or `--network host`
   when `MQTT_HOST=localhost`.
@@ -37,7 +38,7 @@ Service-oriented daemon that polls a Netgear LTE modem via `eternalegypt` and pu
   `ghcr.io` image + inline minimal `environment`), while `make docker-start` runs an inline `eclipse-mosquitto`
   container and the local `$(BUILD_TAG)` image with `.env`.
 - **Healthcheck Semantics**: `--healthcheck` indicates service readiness (`/tmp/healthcheck` is created once startup
-  completes and removed on shutdown), not individual poll or MQTT publish outcomes.
+  completes and removed on shutdown), not individual poll or `MQTT` publish outcomes.
 
 ## Key Commands
 
@@ -54,12 +55,9 @@ Service-oriented daemon that polls a Netgear LTE modem via `eternalegypt` and pu
 
 ## Release & Versioning Flow
 
-- **Single Source of Truth**: Never hardcode release versions in `Makefile` or source files. `BUILD_VERSION` resolves
-  dynamically from exact Git tags via `git describe --tags --exact-match`, falling back to `latest` when untagged.
-- **Publishing**: `make publish` pushes both `:$(BUILD_VERSION)` and `:$(PUBLISH_TAG)` (default: `latest`) to
-  `$(REGISTRY)` (default: `localhost`).
-- **GitHub / GHCR**: Tagging a release (`git tag v0.0.1 && git push origin v0.0.1` or via the GitHub Releases UI)
-  triggers `make publish REGISTRY=ghcr.io/obatiuk`, updating both the versioned tag and `:latest`.
+- **GitHub / GHCR**: Pushing to `master`/`main` triggers `make publish` with `BUILD_VERSION=dev PUBLISH_TAG=dev`
+  (updating `:dev`), while tagging a release (`git tag v0.0.1 && git push origin v0.0.1` or via the GitHub Releases UI)
+  triggers `make publish REGISTRY=ghcr.io/obatiuk`, updating both `:$(BUILD_VERSION)` and `:latest`.
 
 ## Environment Variables
 
@@ -67,7 +65,7 @@ Required:
 
 - `MODEM_HOST`: Netgear modem IP or hostname
 - `MODEM_PASSWORD`: Modem admin password
-- `MQTT_HOST`: MQTT broker IP or hostname
+- `MQTT_HOST`: `MQTT` broker IP or hostname
 
 Optional:
 
@@ -79,38 +77,19 @@ Optional:
 - `MQTT_PASSWORD` (default: empty string; requires `MQTT_USERNAME`)
 - `MQTT_TLS` (`true`/`false`, default: `false`)
 - `MQTT_VALIDATE_CERT` (`true`/`false`, default: `false`)
-- `MQTT_CA_CERT_PATH` (default: empty string; uses system CAs when `MQTT_TLS=true`)
+- `MQTT_CA_CERT_PATH` (default: empty string; uses system `CA`s when `MQTT_TLS=true`)
 - `MQTT_CONNECTION_TIMEOUT` (default: `60` seconds, min: `5`)
 - `MQTT_MAX_RETRIES` (default: `5`, use `0` for unlimited retries)
 - `LOG_LEVEL` (`DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`, case-insensitive; default: `INFO`)
 
-## Coding & Documentation Conventions
+## Skills & Conventions
 
-- **Minimal Changes**: Do not refactor code unless necessary. Keep changes minimal, focused, and easy to review.
-- **Preserve Existing Comments**: Never remove existing comments in source or test files unless explicitly required.
-- **Concise, Human Docs**: Write the shortest possible documentation that achieves the exact same outcome; prefer brief
-  directive explanations over large code blocks and avoid verbose or AI-sounding filler.
-- **Ignore Files**: Keep `.gitignore` and `.dockerignore` minimal and specific to the project; never add speculative or
-  wildcard ignores.
-- **No PII or Carrier Names**: Never include personal identifiable information (names, emails, local IPs, hostnames, or
-  specific cellular carrier names) in repository files, excluding the GitHub handle (`obatiuk`).
-- **Plain-Text Markdown Output**: Always provide `.md` files in unbroken 4-backtick plain-text blocks for one-click
-  copying.
-- **Markdown Formatting**: Wrap all `.md` lines at a maximum of 120 characters and only use square brackets for links,
-  task checkboxes (`- [x]` / `- [ ]`), or GitHub callouts (`> [!NOTE]`).
-- **Commit Messages**:
-  - Omit the first summary/subject line.
-  - Output commit messages for user review rather than running `git commit` or `git reset` directly unless explicitly
-    requested.
-  - Keep commit messages brief—at most 8 lines total (including the blank line and `Co-authored-by` trailer).
-  - Describe changes in plain, human-understandable language rather than referencing code symbols, function/method
-    names, or file paths unless strictly necessary.
-  - Format every bullet point with a literal leading dash (`\- ` in Markdown output so the chat UI renders `- ` instead
-    of an indented `•` list bullet) and trim all leading, trailing, and redundant whitespace on every line.
-  - Always include `Co-authored-by: Gemini <gemini@google.com>` at the end, and **never wrap commit messages in fenced
-    code blocks (` ``` `) or `<details>` tags**—always display them directly as plain un-fenced text so the chat UI
-    never folds them.
-- **Maintain `AGENTS.md` & Skills**: Record project-specific conventions, constraints, and feedback in `AGENTS.md`;
-  route language or coding conventions to the corresponding global skill in `~/.agents/skills/` after user approval.
-- **`TODO.md` Entries**: Write new `TODO.md` items in the same plain, human-understandable language as commit messages,
-  and never modify already-pushed entries.
+- **Global Skills (`~/.agents/skills/`)**: Load and follow the corresponding skill before working on:
+  - `Python` code, tests, `Pipfile`, or `pyproject.toml`: `python-development`
+  - Commit messages, diffs, or `git commit`: `git-commit`
+  - Markdown files (`README.md`, `TODO.md`, `AGENTS.md`, `SKILL.md`): `markdown`
+  - `Makefile`, `Dockerfile`, `GitHub Actions`, `.gitignore`, `.dockerignore`, or release tags: `release-and-ci`
+- **PII Exception**: Exclude all PII and carrier names from repository files; only the GitHub handle `obatiuk` is
+  permitted.
+- **Maintain `AGENTS.md` & Skills**: Keep only project-specific architecture, quirks, and env vars in `AGENTS.md`;
+  route generic workflow, language, or formatting rules to `~/.agents/skills/` after user approval.

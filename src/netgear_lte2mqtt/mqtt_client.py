@@ -152,10 +152,9 @@ class MqttClient:
                 retain=True,
                 properties=self._publish_properties,
             )
-            if wait and hasattr(result, "wait_for_publish"):
-                result.wait_for_publish(timeout=PUBLISH_TIMEOUT_SECONDS)
-
             if result[0] == MQTT_SUCCESS_RC:
+                if wait and hasattr(result, "wait_for_publish"):
+                    result.wait_for_publish(timeout=PUBLISH_TIMEOUT_SECONDS)
                 expiry_seconds = self._config.MQTT_PUBLISH_INTERVAL * EXPIRY_INTERVAL_MULTIPLIER
                 logger.debug(
                     f"Published status to topic '{self._topic}' "

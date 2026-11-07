@@ -38,22 +38,30 @@ jobs:
           cache: "pip"
           cache-dependency-path: "Pipfile"
 
-      # Run verification suite on branch pushes and pull requests
+      # Run verification suite on pull requests without publishing images
       - name: Run format, lint, audit, and unit tests
-        if: "!startsWith(github.ref, 'refs/tags/v')"
+        if: github.event_name == 'pull_request'
         run: make build
 
-      # Authenticate and publish versioned + latest container images on version tags
+      # Authenticate with GHCR for branch and release tag pushes
       - name: Log in to GitHub Container Registry
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: github.event_name == 'push'
         uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and publish container image
-        if: startsWith(github.ref, 'refs/tags/v')
+      # Publish :dev image on master/main branch pushes
+      - name: Build and publish dev container image
+        if: github.event_name == 'push' && !startsWith(github.ref, 'refs/tags/v')
+        run: |
+          OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          make publish REGISTRY="ghcr.io/${OWNER_LOWER}" BUILD_VERSION=dev PUBLISH_TAG=dev
+
+      # Publish versioned and :latest container images on v* release tags
+      - name: Build and publish release container image
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
         run: |
           OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           make publish REGISTRY="ghcr.io/${OWNER_LOWER}"
