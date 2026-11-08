@@ -74,10 +74,12 @@ class TestModemClient:
         mock_modem.information = AsyncMock(side_effect=[expired_result, valid_result])
 
         client = ModemClient(mock_config, mock_session)
-        status = await client.get_status()
+        with patch("netgear_lte2mqtt.modem_client.logger.warning") as mock_log_warning:
+            status = await client.get_status()
 
         assert status is not None
         assert status["wire_connected"] is True
+        mock_log_warning.assert_not_called()
         mock_modem.login.assert_awaited_once_with(password=mock_config.MODEM_PASSWORD)
         assert mock_modem.information.call_count == MAX_STATUS_ATTEMPTS
 
@@ -94,10 +96,12 @@ class TestModemClient:
         mock_modem.information = AsyncMock(side_effect=[Exception("Session expired"), mock_result])
 
         client = ModemClient(mock_config, mock_session)
-        status = await client.get_status()
+        with patch("netgear_lte2mqtt.modem_client.logger.warning") as mock_log_warning:
+            status = await client.get_status()
 
         assert status is not None
         assert status["wire_connected"] is True
+        mock_log_warning.assert_not_called()
         mock_modem.login.assert_awaited_once_with(password=mock_config.MODEM_PASSWORD)
         assert mock_modem.information.call_count == MAX_STATUS_ATTEMPTS
 

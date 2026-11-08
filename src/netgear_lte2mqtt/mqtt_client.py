@@ -1,4 +1,5 @@
 import asyncio
+import contextlib
 import json
 import logging
 import ssl
@@ -27,13 +28,14 @@ EMPTY_STATUS_PAYLOAD = json.dumps({})
 class MqttClient:
     """Client for managing MQTT connectivity and publishing."""
 
-    __slots__ = ("_client", "_config", "_connected", "_publish_properties", "_topic")
+    __slots__ = ("_client", "_config", "_connected", "_publish_properties", "_session_active", "_topic")
 
     def __init__(self, config: Config) -> None:
         """Initializes the MQTT v5 client, properties, Last Will, authentication, and TLS."""
         self._config = config
         self._topic = config.MQTT_TOPIC
         self._connected = False
+        self._session_active = True
         self._publish_properties = Properties(PacketTypes.PUBLISH)
         self._publish_properties.MessageExpiryInterval = config.MQTT_PUBLISH_INTERVAL * EXPIRY_INTERVAL_MULTIPLIER
 
@@ -77,8 +79,10 @@ class MqttClient:
         """Configures TLS settings for the MQTT client."""
         if self._config.MQTT_TLS:
             ca_certs = self._config.MQTT_CA_CERT_PATH or None
+            cert_reqs = ssl.CERT_REQUIRED if self._config.MQTT_VALIDATE_CERT else ssl.CERT_NONE
             self._client.tls_set(
                 ca_certs=ca_certs,
+                cert_reqs=cert_reqs,
                 tls_version=ssl.PROTOCOL_TLS_CLIENT,
             )
             self._client.tls_insecure_set(not self._config.MQTT_VALIDATE_CERT)
@@ -90,14 +94,17 @@ class MqttClient:
     def _on_connect(self, _client: Any, _userdata: Any, _flags: Any, reason_code: Any, _properties: Any = None) -> None:
         """Callback invoked when the client connects or reconnects to the MQTT broker."""
         if reason_code == MQTT_SUCCESS_RC:
+            self._session_active = True
             logger.info(f"MQTT session active with broker at {self._config.MQTT_HOST}:{self._config.MQTT_PORT}")
         else:
+            self._session_active = False
             logger.error(f"MQTT broker connection refused (reason_code={reason_code})")
 
     def _on_disconnect(
         self, _client: Any, _userdata: Any, _flags: Any, reason_code: Any, _properties: Any = None
     ) -> None:
         """Callback invoked when the client disconnects from the MQTT broker."""
+        self._session_active = False
         if reason_code == MQTT_SUCCESS_RC:
             logger.debug("MQTT client disconnected cleanly")
         else:
@@ -106,7 +113,7 @@ class MqttClient:
                 "background loop will attempt to reconnect automatically"
             )
 
-    async def connect(self) -> None:
+    async def connect(self, stop_event: asyncio.Event | None = None) -> None:
         """Establishes connection to the MQTT broker with exponential backoff retry logic."""
         connect_attempts = 0
         while self._config.MQTT_MAX_RETRIES <= 0 or connect_attempts < self._config.MQTT_MAX_RETRIES:
@@ -135,13 +142,24 @@ class MqttClient:
                     f"MQTT connection attempt {connect_attempts}/{max_retries_label} failed: {e}. "
                     f"Retrying in {wait_time}s..."
                 )
-                await asyncio.sleep(wait_time)
+                if stop_event is not None:
+                    with contextlib.suppress(TimeoutError):
+                        await asyncio.wait_for(stop_event.wait(), timeout=wait_time)
+                    if stop_event.is_set():
+                        return
+                else:
+                    await asyncio.sleep(wait_time)
 
         self._client.loop_start()
         self._connected = True
+        self._session_active = True
 
     def publish_status(self, status: dict[str, Any], *, wait: bool = False) -> bool:
         """Publishes the modem status dictionary as JSON to the configured MQTT topic."""
+        if not self._session_active:
+            logger.error(f"Failed to publish status to topic '{self._topic}': MQTT session is not active")
+            return False
+
         payload = json.dumps(status) if status else EMPTY_STATUS_PAYLOAD
 
         try:
@@ -169,12 +187,13 @@ class MqttClient:
             return False
 
     def disconnect(self) -> None:
-        """Publishes empty status, stops the MQTT loop, and disconnects from the broker."""
+        """Publishes empty status, disconnects from the broker, and stops the MQTT loop."""
         if not self._connected:
             return
         logger.debug("Publishing empty status payload before disconnecting from MQTT broker...")
         self.publish_status({}, wait=True)
-        self._client.loop_stop()
         self._client.disconnect()
+        self._client.loop_stop()
         self._connected = False
+        self._session_active = False
         logger.info("Disconnected from MQTT broker")

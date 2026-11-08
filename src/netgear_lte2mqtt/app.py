@@ -92,15 +92,20 @@ class MonitorApp:
 
                 if _has_topic_placeholders(self._config.MQTT_TOPIC):
                     initial_status = await self._initialize_dynamic_topic(modem_client)
-                    await self._mqtt_client.connect()
+                    await self._mqtt_client.connect(stop_event=self._stop_event)
                 else:
-                    await self._mqtt_client.connect()
-                    try:
-                        await modem_client.login()
-                    except Exception as e:  # noqa: BLE001
-                        logger.warning(
-                            f"Initial modem login failed ({e}); will publish empty status and retry on next poll cycle"
-                        )
+                    await self._mqtt_client.connect(stop_event=self._stop_event)
+                    if not self._stop_event.is_set():
+                        try:
+                            await modem_client.login()
+                        except Exception as e:  # noqa: BLE001
+                            logger.warning(
+                                f"Initial modem login failed ({e}); "
+                                "will publish empty status and retry on next poll cycle"
+                            )
+
+                if self._stop_event.is_set():
+                    return
 
                 logger.info(
                     f"Publishing modem status to topic {self._mqtt_client.topic} every "

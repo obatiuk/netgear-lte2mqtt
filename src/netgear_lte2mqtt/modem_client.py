@@ -83,7 +83,7 @@ class ModemClient:
                 return status
             except Exception as e:  # noqa: BLE001
                 if attempt < MAX_STATUS_ATTEMPTS - 1:
-                    logger.warning(f"Error retrieving modem status ({e}), attempting re-login...")
+                    logger.debug(f"Error retrieving modem status ({e}), attempting re-login...")
                     try:
                         await self.login()
                     except Exception:  # noqa: BLE001

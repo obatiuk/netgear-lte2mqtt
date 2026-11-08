@@ -8,6 +8,9 @@ None.
 
 ### dev
 
+- [x] Fix `MQTT` `TLS` `cert_reqs` when `MQTT_VALIDATE_CERT=false`, skip queuing `QoS 1` publishes while disconnected,
+  abort startup retries on `SIGTERM`/`SIGINT`, and downgrade routine modem session refresh logs to `DEBUG`
+- [x] Disconnect the `MQTT` client before stopping the network loop on shutdown so the `DISCONNECT` packet is flushed
 - [x] Share the `pip` cache directory with `pipenv` in `GitHub Actions` to speed up dependency installation
 - [x] Use default container networking and explicit configuration placeholders in documentation and templates
 - [x] Skip waiting for `MQTT` publish completion on failed publishes, eliminate real-time sleeps in unit tests,

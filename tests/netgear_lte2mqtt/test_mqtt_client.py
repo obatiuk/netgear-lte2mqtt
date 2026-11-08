@@ -125,7 +125,8 @@ class TestMqttClient:
     async def test_disconnect_waits_for_empty_publish_only_when_connected(
         self, mock_client_cls: MagicMock, mock_config: Config
     ) -> None:
-        # Verify disconnect is a no-op before connect and waits for empty status publish when connected
+        # Regression: Verify disconnect is a no-op before connect, waits for empty status publish,
+        # and calls client.disconnect() before loop_stop() so the DISCONNECT packet is flushed
         mock_client = mock_client_cls.return_value
         mock_msg_info = MagicMock()
         mock_msg_info.__getitem__.side_effect = lambda idx: 0 if idx == 0 else None
@@ -141,8 +142,10 @@ class TestMqttClient:
         client.disconnect()
 
         mock_msg_info.wait_for_publish.assert_called_once_with(timeout=PUBLISH_TIMEOUT_SECONDS)
-        mock_client.loop_stop.assert_called_once()
         mock_client.disconnect.assert_called_once()
+        mock_client.loop_stop.assert_called_once()
+        call_names = [c[0] for c in mock_client.mock_calls]
+        assert call_names.index("disconnect") < call_names.index("loop_stop")
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_callbacks_log_without_error(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
@@ -152,6 +155,52 @@ class TestMqttClient:
         client._on_connect(None, None, None, 135)
         client._on_disconnect(None, None, None, 0)
         client._on_disconnect(None, None, None, 1)
+
+    @pytest.mark.asyncio
+    @patch("netgear_lte2mqtt.mqtt_client.Client")
+    async def test_connect_aborts_when_stop_event_set_during_retry(
+        self, mock_client_cls: MagicMock, mock_config: Config
+    ) -> None:
+        # Regression: Verify connect() aborts unlimited retries cleanly when stop_event is set
+        import asyncio
+
+        mock_client = mock_client_cls.return_value
+        unlimited_config = replace(mock_config, MQTT_MAX_RETRIES=0)
+        client = MqttClient(unlimited_config)
+        stop_event = asyncio.Event()
+
+        def fail_and_stop(*_args: object) -> None:
+            stop_event.set()
+            raise RuntimeError("Broker down")
+
+        mock_client.connect.side_effect = fail_and_stop
+
+        await client.connect(stop_event=stop_event)
+
+        assert mock_client.connect.call_count == 1
+        mock_client.loop_start.assert_not_called()
+
+    @patch("netgear_lte2mqtt.mqtt_client.Client")
+    def test_publish_skipped_when_session_inactive(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
+        # Regression: Verify publish_status does not queue QoS 1 messages while disconnected
+        mock_client = mock_client_cls.return_value
+        mock_client.publish.return_value = (0, None)
+        client = MqttClient(mock_config)
+
+        # Simulate unexpected broker disconnect
+        client._on_disconnect(None, None, None, 1)
+        assert client.publish_status({"wire_connected": True}) is False
+        mock_client.publish.assert_not_called()
+
+        # Simulate broker connection refused
+        client._on_connect(None, None, None, 135)
+        assert client.publish_status({"wire_connected": True}) is False
+        mock_client.publish.assert_not_called()
+
+        # Simulate broker reconnect success
+        client._on_connect(None, None, None, 0)
+        assert client.publish_status({"wire_connected": True}) is True
+        mock_client.publish.assert_called_once()
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_setup_tls_enabled(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
@@ -169,6 +218,27 @@ class TestMqttClient:
 
         mock_client.tls_set.assert_called_once_with(
             ca_certs="/path/to/ca.crt",
+            cert_reqs=ssl.CERT_REQUIRED,
             tls_version=ssl.PROTOCOL_TLS_CLIENT,
         )
         mock_client.tls_insecure_set.assert_called_once_with(False)
+
+    @patch("netgear_lte2mqtt.mqtt_client.Client")
+    def test_setup_tls_without_cert_validation(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
+        # Regression: Verify MQTT_VALIDATE_CERT=False sets cert_reqs=ssl.CERT_NONE for self-signed certs
+        mock_client = mock_client_cls.return_value
+        tls_config = replace(
+            mock_config,
+            MQTT_PORT=8883,
+            MQTT_TLS=True,
+            MQTT_VALIDATE_CERT=False,
+        )
+
+        MqttClient(tls_config)
+
+        mock_client.tls_set.assert_called_once_with(
+            ca_certs=None,
+            cert_reqs=ssl.CERT_NONE,
+            tls_version=ssl.PROTOCOL_TLS_CLIENT,
+        )
+        mock_client.tls_insecure_set.assert_called_once_with(True)

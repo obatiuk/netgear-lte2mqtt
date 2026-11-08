@@ -250,6 +250,29 @@ class TestMonitorApp:
 
     @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.app.MqttClient")
+    @patch("netgear_lte2mqtt.app.ModemClient")
+    async def test_stop_during_startup_aborts_before_polling(
+        self, mock_modem_cls: MagicMock, mock_mqtt_cls: MagicMock, mock_config: Config
+    ) -> None:
+        # Regression: Verify shutdown signal during MQTT startup exits cleanly without polling or marking healthy
+        mock_mqtt = mock_mqtt_cls.return_value
+        mock_modem = mock_modem_cls.return_value
+        mock_modem.login = AsyncMock()
+        app = MonitorApp(mock_config)
+
+        async def stop_during_connect(*_args: Any, **_kwargs: Any) -> None:
+            app.stop()
+
+        mock_mqtt.connect = AsyncMock(side_effect=stop_during_connect)
+
+        await app.run()
+
+        mock_modem.login.assert_not_awaited()
+        mock_mqtt.publish_status.assert_not_called()
+        mock_mqtt.disconnect.assert_called_once()
+
+    @pytest.mark.asyncio
+    @patch("netgear_lte2mqtt.app.MqttClient")
     async def test_cleanup(self, mock_mqtt_cls: MagicMock, mock_config: Config) -> None:
         # Verify _cleanup disconnects the MQTT client
         mock_mqtt = mock_mqtt_cls.return_value
