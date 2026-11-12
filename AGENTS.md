@@ -6,8 +6,11 @@ Service-oriented daemon that polls a Netgear `LTE` modem via `eternalegypt` and 
 `MQTT`.
 
 ```text
-├── docker/
-│   └── Dockerfile             # Multi-stage Python 3.14 container build
+├── deploy/
+│   ├── .env.full.example      # Complete environment variable template
+│   ├── .env.minimal.example   # Minimal required environment variable template
+│   ├── Dockerfile             # Multi-stage Python 3.14 container build
+│   └── docker-compose.yml     # Self-contained consumer Compose example with Mosquitto
 ├── src/
 │   └── netgear_lte2mqtt/
 │       ├── __init__.py

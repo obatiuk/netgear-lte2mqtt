@@ -8,6 +8,7 @@ None.
 
 ### dev
 
+- [x] Merge `docker/` and `deploy/` into a single `deploy/` directory and update documentation and build configuration
 - [x] Fix `MQTT` `TLS` `cert_reqs` when `MQTT_VALIDATE_CERT=false`, skip queuing `QoS 1` publishes while disconnected,
   abort startup retries on `SIGTERM`/`SIGINT`, and downgrade routine modem session refresh logs to `DEBUG`
 - [x] Disconnect the `MQTT` client before stopping the network loop on shutdown so the `DISCONNECT` packet is flushed

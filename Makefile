@@ -17,7 +17,7 @@ VENV_DIR := $(PROJECT_ROOT)/.venv
 SRC_DIR := $(PROJECT_ROOT)/src
 PKG_DIR := $(SRC_DIR)/netgear_lte2mqtt
 TESTS_DIR := $(PROJECT_ROOT)/tests
-DOCKER_DIR := $(PROJECT_ROOT)/docker
+DEPLOY_DIR := $(PROJECT_ROOT)/deploy
 
 export PYTHONPATH := $(SRC_DIR)
 
@@ -33,7 +33,7 @@ ENV_FILE ?= $(PROJECT_ROOT)/.env
 REQ_FILE := $(PROJECT_ROOT)/requirements.txt
 FLAG_FILE := $(VENV_DIR)/.installed
 PIP_FILE := $(PROJECT_ROOT)/Pipfile
-DOCKER_FILE := $(DOCKER_DIR)/Dockerfile
+DOCKER_FILE := $(DEPLOY_DIR)/Dockerfile
 
 SOURCES := $(wildcard $(PKG_DIR)/*.py)
 RUFF_TARGETS := $(SRC_DIR) $(TESTS_DIR)
@@ -104,7 +104,8 @@ update: env
 # Container lifecycle and publishing
 .PHONY: docker-build
 docker-build: build $(REQ_FILE) $(DOCKER_FILE)
-	@$(DOCKER) build --format docker --pull -t $(BUILD_TAG) -f $(DOCKER_FILE) .
+	@trap 'rm -f $(REQ_FILE)' EXIT; \
+		$(DOCKER) build --format docker --pull -t $(BUILD_TAG) -f $(DOCKER_FILE) .
 
 .PHONY: docker-start
 docker-start: $(ENV_FILE) docker-build docker-stop
@@ -139,7 +140,7 @@ clean: docker-stop
 	-@$(PYTHON) -m ruff clean
 	-@$(PIPENV) --clear
 	-@$(PIPENV) remove
-	-@rm -f $(PROJECT_ROOT)/.coverage
+	-@rm -f $(PROJECT_ROOT)/.coverage $(REQ_FILE)
 	-@rm -rf $(PROJECT_ROOT)/.pytest_cache $(PROJECT_ROOT)/.ruff_cache
 
 .PHONY: print
