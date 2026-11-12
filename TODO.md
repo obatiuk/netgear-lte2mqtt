@@ -8,6 +8,10 @@ None.
 
 ### dev
 
+None.
+
+### v0.0.3
+
 - [x] Merge `docker/` and `deploy/` into a single `deploy/` directory and update documentation and build configuration
 - [x] Fix `MQTT` `TLS` `cert_reqs` when `MQTT_VALIDATE_CERT=false`, skip queuing `QoS 1` publishes while disconnected,
   abort startup retries on `SIGTERM`/`SIGINT`, and downgrade routine modem session refresh logs to `DEBUG`
