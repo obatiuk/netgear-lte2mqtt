@@ -2,6 +2,7 @@
 
 ## dev
 
+- Omit the zero-duration container healthcheck start period so container image builds succeed
 - Mark the service healthy immediately at startup before external network connections and shorten the container
   healthcheck interval
 - Extract release history into a dedicated changelog, split architecture reference docs from agent rules, add
