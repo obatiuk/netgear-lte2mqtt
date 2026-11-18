@@ -29,9 +29,9 @@ or deployment layout.
 
 ```text
 main.py ──→ get_config() ──→ MonitorApp.run()
+  ├── touch /tmp/healthcheck
   ├── dynamic MQTT_TOPIC: ModemClient.login/get_status ──→ MqttClient.set_topic ──→ connect
   ├── static MQTT_TOPIC:  MqttClient.connect ──→ ModemClient.login (non-fatal on failure)
-  ├── touch /tmp/healthcheck
   ├── poll loop: ModemClient.get_status() ──→ MqttClient.publish_status() (QoS 1, retain)
   └── finally: unlink /tmp/healthcheck ──→ publish "{}" (wait) ──→ disconnect ──→ loop_stop
 ```

@@ -2,6 +2,8 @@
 
 ## dev
 
+- Mark the service healthy immediately at startup before external network connections and shorten the container
+  healthcheck interval
 - Extract release history into a dedicated changelog, split architecture reference docs from agent rules, add
   self-documenting build help sections, and enforce collection-type, exception-chaining, and keyword-only signature
   rules

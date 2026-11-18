@@ -233,6 +233,55 @@ class TestMonitorApp:
             app._set_healthy(True)
 
     @pytest.mark.asyncio
+    @pytest.mark.parametrize(
+        "mqtt_topic",
+        [
+            "netgear-lte2mqtt/state",
+            "netgear-lte2mqtt/{model}/state",
+        ],
+    )
+    @patch("netgear_lte2mqtt.app.MqttClient")
+    @patch("netgear_lte2mqtt.app.ModemClient")
+    async def test_marks_healthy_before_external_startup_calls(
+        self,
+        mock_modem_cls: MagicMock,
+        mock_mqtt_cls: MagicMock,
+        mock_config: Config,
+        tmp_path: Path,
+        mqtt_topic: str,
+    ) -> None:
+        # Verify readiness file exists before MQTT or modem network calls and is removed on shutdown
+        heartbeat_file = tmp_path / "healthcheck"
+        config = replace(mock_config, MQTT_TOPIC=mqtt_topic)
+        observed_during_startup: list[bool] = []
+
+        mock_mqtt = mock_mqtt_cls.return_value
+        mock_modem = mock_modem_cls.return_value
+        app = MonitorApp(config)
+
+        async def record_on_mqtt_connect(*_args: Any, **_kwargs: Any) -> None:
+            observed_during_startup.append(heartbeat_file.is_file())
+
+        async def record_on_modem_login() -> None:
+            observed_during_startup.append(heartbeat_file.is_file())
+
+        mock_mqtt.connect = AsyncMock(side_effect=record_on_mqtt_connect)
+        mock_modem.login = AsyncMock(side_effect=record_on_modem_login)
+        mock_modem.get_status = AsyncMock(return_value={"model": "LB1120", "wire_connected": True})
+
+        def stop_on_publish(*_args: Any, **_kwargs: Any) -> bool:
+            app.stop()
+            return True
+
+        mock_mqtt.publish_status.side_effect = stop_on_publish
+
+        with patch.object(app_module, "HEARTBEAT_FILE", heartbeat_file):
+            await app.run()
+
+        assert observed_during_startup == [True, True]
+        assert heartbeat_file.is_file() is False
+
+    @pytest.mark.asyncio
     @patch("netgear_lte2mqtt.app.MqttClient")
     async def test_bootstrap_failure(self, mock_mqtt_cls: MagicMock, mock_config: Config) -> None:
         # Verify critical MQTT connection failure propagates during startup

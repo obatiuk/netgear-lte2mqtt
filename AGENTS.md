@@ -11,8 +11,8 @@ and publishes `JSON` status telemetry to `MQTT` v5 (`MqttClient`, orchestrated b
   [docker-compose.yml](deploy/docker-compose.yml) uses a `mqtt` bridge; `make docker-start` uses `--network host`.
 - **Compose vs Local Testing**: Keep [docker-compose.yml](deploy/docker-compose.yml) as a self-contained consumer
   example (`ghcr.io` image + inline `environment`); use `make docker-start` for local `$(BUILD_TAG)` + `.env` testing.
-- **Healthcheck Semantics**: `--healthcheck` checks daemon readiness (`/tmp/healthcheck` created after startup and
-  removed on shutdown), not individual poll or `MQTT` publish outcomes.
+- **Healthcheck Semantics**: `--healthcheck` checks daemon readiness (`/tmp/healthcheck` created at startup before
+  network calls and removed on shutdown), not individual poll or `MQTT` publish outcomes.
 - **PII Exception**: Only the GitHub handle `obatiuk` is permitted in repository files.
 
 ## Reference Map

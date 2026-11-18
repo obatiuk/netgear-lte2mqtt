@@ -39,7 +39,7 @@ COPY --chown=65532:65532 src/ ./src/
 USER 65532
 
 # Healthcheck to verify the service started and is running
-HEALTHCHECK --interval=10s --timeout=3s --start-period=5s --retries=2 \
+HEALTHCHECK --interval=5s --timeout=3s --start-period=0s --retries=2 \
     CMD ["python3", "-m", "netgear_lte2mqtt.main", "--healthcheck"]
 
 # Run the application as a module to ensure correct import behavior

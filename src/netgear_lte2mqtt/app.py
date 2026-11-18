@@ -84,6 +84,7 @@ class MonitorApp:
         self._log_startup()
 
         try:
+            self._set_healthy(True)
             jar = aiohttp.CookieJar(unsafe=True)
             timeout = aiohttp.ClientTimeout(total=MODEM_HTTP_TIMEOUT)
             async with aiohttp.ClientSession(cookie_jar=jar, timeout=timeout) as session:
@@ -112,7 +113,6 @@ class MonitorApp:
                     f"Publishing modem status to topic {self._mqtt_client.topic} every "
                     f"{_format_seconds(self._config.MQTT_PUBLISH_INTERVAL)}"
                 )
-                self._set_healthy(True)
 
                 while not self._stop_event.is_set():
                     await self._poll_and_publish(prefetched_status=initial_status)
