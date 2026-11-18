@@ -1,5 +1,6 @@
 from dataclasses import replace
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -100,12 +101,35 @@ class TestMonitorApp:
         app = MonitorApp(placeholder_config)
         with (
             patch("asyncio.sleep", return_value=None),
-            pytest.raises(RuntimeError, match="Failed to resolve MQTT_TOPIC"),
+            pytest.raises(RuntimeError, match="Failed to resolve MQTT_TOPIC") as exc_info,
         ):
             await app.run()
 
+        assert exc_info.value.__cause__ is not None
         assert mock_modem.get_status.call_count == INITIAL_PLACEHOLDER_MAX_ATTEMPTS
         mock_mqtt.connect.assert_not_called()
+
+    @pytest.mark.asyncio
+    @patch("netgear_lte2mqtt.app.MqttClient")
+    async def test_poll_and_resolve_topic_accept_mapping(self, mock_mqtt_cls: MagicMock, mock_config: Config) -> None:
+        # Verify topic resolution and status polling accept generic read-only Mapping inputs
+        mock_mqtt = mock_mqtt_cls.return_value
+        readonly_status = MappingProxyType(
+            {
+                "model": "LB1120",
+                "serial_number": "SN0000000000",
+                "wire_connected": True,
+                "mobile_connected": False,
+                "upstream": "Wired",
+                "connection_text": "Connected",
+                "roaming": False,
+            }
+        )
+        assert _resolve_topic("netgear-lte2mqtt/{model}/state", readonly_status) == "netgear-lte2mqtt/LB1120/state"
+
+        app = MonitorApp(mock_config)
+        await app._poll_and_publish(prefetched_status=readonly_status)
+        mock_mqtt.publish_status.assert_called_once_with(readonly_status)
 
     def test_resolve_topic_missing_field_raises_error(self) -> None:
         # Verify _resolve_topic raises RuntimeError when a required placeholder value is None

@@ -17,7 +17,7 @@ include = [
     "src",
     "tests"
 ]
-extraPaths = ["src"]
+extraPaths = ["src", "tests"]
 venv = ".venv"
 venvPath = "."
 

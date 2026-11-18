@@ -1,6 +1,7 @@
 import asyncio
 import contextlib
 import logging
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,7 @@ def _has_topic_placeholders(topic: str) -> bool:
     return any(f"{{{field}}}" in topic for field in ALLOWED_TOPIC_PLACEHOLDERS)
 
 
-def _resolve_topic(topic: str, status: dict[str, Any] | None) -> str:
+def _resolve_topic(topic: str, status: Mapping[str, Any] | None) -> str:
     """Replaces {model} and {serial_number} placeholders in the MQTT topic."""
     if not status:
         raise RuntimeError(f"Cannot resolve MQTT_TOPIC '{topic}': modem status is unavailable")
@@ -152,17 +153,17 @@ class MonitorApp:
         raise RuntimeError(
             f"Failed to resolve MQTT_TOPIC '{self._config.MQTT_TOPIC}' after "
             f"{INITIAL_PLACEHOLDER_MAX_ATTEMPTS} attempts: {last_error}"
-        )
+        ) from last_error
 
     def stop(self) -> None:
         """Signals the application to shut down gracefully."""
         logger.info("Shutdown signal received...")
         self._stop_event.set()
 
-    async def _poll_and_publish(self, prefetched_status: dict[str, Any] | None = None) -> None:
+    async def _poll_and_publish(self, prefetched_status: Mapping[str, Any] | None = None) -> None:
         """Polls modem for status and publishes result to MQTT."""
-        status: dict[str, Any] = {}
-        result: dict[str, Any] | None = prefetched_status
+        status: Mapping[str, Any] = {}
+        result: Mapping[str, Any] | None = prefetched_status
 
         if result is None and self._modem_client is not None:
             result = await self._modem_client.get_status()
@@ -180,7 +181,7 @@ class MonitorApp:
 
         self._mqtt_client.publish_status(status)
 
-    def _log_state_transition(self, result: dict[str, Any]) -> None:
+    def _log_state_transition(self, result: Mapping[str, Any]) -> None:
         """Logs connection state transitions and recoveries at INFO level."""
         if self._modem_online is False:
             logger.info("Modem connection restored; resuming status telemetry publishing")

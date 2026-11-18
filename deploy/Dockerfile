@@ -3,6 +3,8 @@
 # Builder stage to install dependencies
 FROM registry.access.redhat.com/hi/python:3.14-builder AS builder
 
+LABEL org.opencontainers.image.source="https://github.com/obatiuk/netgear-lte2mqtt"
+
 USER root
 
 WORKDIR /app

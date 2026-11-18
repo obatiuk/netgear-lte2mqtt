@@ -3,6 +3,7 @@ import contextlib
 import json
 import logging
 import ssl
+from collections.abc import Mapping
 from typing import Any
 
 from paho.mqtt.client import Client, MQTTv5
@@ -154,13 +155,14 @@ class MqttClient:
         self._connected = True
         self._session_active = True
 
-    def publish_status(self, status: dict[str, Any], *, wait: bool = False) -> bool:
+    def publish_status(self, status: Mapping[str, Any], *, wait: bool = False) -> bool:
         """Publishes the modem status dictionary as JSON to the configured MQTT topic."""
         if not self._session_active:
             logger.error(f"Failed to publish status to topic '{self._topic}': MQTT session is not active")
             return False
 
-        payload = json.dumps(status) if status else EMPTY_STATUS_PAYLOAD
+        serializable = status if isinstance(status, dict) else dict(status)
+        payload = json.dumps(serializable) if serializable else EMPTY_STATUS_PAYLOAD
 
         try:
             result = self._client.publish(

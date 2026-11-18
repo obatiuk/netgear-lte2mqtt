@@ -8,6 +8,7 @@ from netgear_lte2mqtt.config import (
     MAX_CLIENT_ID_LENGTH,
     Config,
     ConfigError,
+    _parse_int,
     _validate_ca_cert_path,
     get_config,
 )
@@ -119,6 +120,11 @@ class TestConfig:
             with pytest.raises(ConfigError) as exc_info:
                 get_config()
             assert expected_error in str(exc_info.value)
+
+    def test_parse_int_requires_keyword_only_bounds(self, base_env: dict[str, str]) -> None:
+        # Verify _parse_int enforces keyword-only parameters when accepting >3 arguments
+        with patch.dict(os.environ, base_env, clear=True), pytest.raises(TypeError):
+            _parse_int("MQTT_PORT", "1883", 1, 65535)  # pyright: ignore[reportCallIssue]
 
     @pytest.mark.parametrize(
         ("var", "value"),

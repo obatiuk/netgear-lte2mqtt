@@ -14,7 +14,7 @@ My home network uses a Netgear `LTE` modem for automatic failover when wired int
 cellular plans still have strict data caps, I need my automated `restic` backups (from my
 [.dotfiles](https://github.com/obatiuk/dotfiles)) to pause when running on cellular backup.
 
-Home Assistant has a Netgear `LTE` integration, but my full backup script shuts down Home Assistant before taking
+`Home Assistant` has a Netgear `LTE` integration, but my full backup script shuts down `Home Assistant` before taking
 snapshots. This service runs standalone next to `Mosquitto` so backup scripts can check `MQTT` directly to see if wired
 internet is active.
 

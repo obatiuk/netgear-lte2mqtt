@@ -40,9 +40,8 @@ jobs:
           cache: "pip"
           cache-dependency-path: "Pipfile"
 
-      # Run verification suite on pull requests without publishing images
+      # Run verification suite before authenticating or publishing images
       - name: Run format, lint, audit, and unit tests
-        if: github.event_name == 'pull_request'
         run: make build
 
       # Authenticate with GHCR for branch and release tag pushes

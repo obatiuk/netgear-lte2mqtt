@@ -1,6 +1,8 @@
+import asyncio
 import json
 import ssl
 from dataclasses import replace
+from types import MappingProxyType
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -95,6 +97,20 @@ class TestMqttClient:
         )
 
     @patch("netgear_lte2mqtt.mqtt_client.Client")
+    def test_publish_status_accepts_readonly_mapping(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
+        # Verify publish_status accepts any collections.abc.Mapping and serializes it to JSON
+        mock_client = mock_client_cls.return_value
+        mock_client.publish.return_value = (0, None)
+        client = MqttClient(mock_config)
+        readonly_status = MappingProxyType({"wire_connected": True, "upstream": "Wired"})
+
+        published = client.publish_status(readonly_status)
+
+        assert published is True
+        call_args, _ = mock_client.publish.call_args
+        assert call_args == (mock_config.MQTT_TOPIC, json.dumps({"wire_connected": True, "upstream": "Wired"}))
+
+    @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_publish_status_fail(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Verify non-zero publish return code returns False without waiting for publish or raising
         # Simulate MQTT publish failure (return code != 0)
@@ -162,8 +178,6 @@ class TestMqttClient:
         self, mock_client_cls: MagicMock, mock_config: Config
     ) -> None:
         # Regression: Verify connect() aborts unlimited retries cleanly when stop_event is set
-        import asyncio
-
         mock_client = mock_client_cls.return_value
         unlimited_config = replace(mock_config, MQTT_MAX_RETRIES=0)
         client = MqttClient(unlimited_config)

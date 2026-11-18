@@ -21,8 +21,9 @@ tests/
 
 # Environment, docs & IDE
 .env
+docs/
 AGENTS.md
+CHANGELOG.md
 LICENSE
 README.md
-TODO.md
 netgear-lte2mqtt.iml

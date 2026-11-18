@@ -133,7 +133,7 @@ def _validate_log_level(level: str) -> str:
     return cleaned
 
 
-def _parse_int(var_name: str, default: str, min_val: int, max_val: int | None = None) -> int:
+def _parse_int(var_name: str, default: str, *, min_val: int, max_val: int | None = None) -> int:
     """Parses an integer environment variable and enforces minimum and optional maximum bounds."""
     raw = os.environ.get(var_name, default).strip()
     try:
@@ -187,7 +187,7 @@ def get_config() -> Config:
         MODEM_PASSWORD=_validate_password(os.environ["MODEM_PASSWORD"]),
         MQTT_TOPIC=_validate_mqtt_topic(os.environ.get("MQTT_TOPIC", DEFAULT_MQTT_TOPIC)),
         MQTT_HOST=_validate_host(os.environ["MQTT_HOST"], "MQTT_HOST"),
-        MQTT_PORT=_parse_int("MQTT_PORT", DEFAULT_MQTT_PORT, MIN_PORT, MAX_PORT),
+        MQTT_PORT=_parse_int("MQTT_PORT", DEFAULT_MQTT_PORT, min_val=MIN_PORT, max_val=MAX_PORT),
         MQTT_CLIENT_ID=_validate_mqtt_client_id(os.environ.get("MQTT_CLIENT_ID", DEFAULT_MQTT_CLIENT_ID)),
         MQTT_USERNAME=mqtt_username,
         MQTT_PASSWORD=mqtt_password,
@@ -195,9 +195,11 @@ def get_config() -> Config:
         MQTT_VALIDATE_CERT=mqtt_validate_cert,
         MQTT_CA_CERT_PATH=mqtt_ca_cert_path,
         MQTT_CONNECTION_TIMEOUT=_parse_int(
-            "MQTT_CONNECTION_TIMEOUT", DEFAULT_MQTT_CONNECTION_TIMEOUT, MIN_CONNECTION_TIMEOUT
+            "MQTT_CONNECTION_TIMEOUT", DEFAULT_MQTT_CONNECTION_TIMEOUT, min_val=MIN_CONNECTION_TIMEOUT
         ),
-        MQTT_MAX_RETRIES=_parse_int("MQTT_MAX_RETRIES", DEFAULT_MQTT_MAX_RETRIES, MIN_MAX_RETRIES),
-        MQTT_PUBLISH_INTERVAL=_parse_int("MQTT_PUBLISH_INTERVAL", DEFAULT_MQTT_PUBLISH_INTERVAL, MIN_PUBLISH_INTERVAL),
+        MQTT_MAX_RETRIES=_parse_int("MQTT_MAX_RETRIES", DEFAULT_MQTT_MAX_RETRIES, min_val=MIN_MAX_RETRIES),
+        MQTT_PUBLISH_INTERVAL=_parse_int(
+            "MQTT_PUBLISH_INTERVAL", DEFAULT_MQTT_PUBLISH_INTERVAL, min_val=MIN_PUBLISH_INTERVAL
+        ),
         LOG_LEVEL=_validate_log_level(os.environ.get("LOG_LEVEL", DEFAULT_LOG_LEVEL)),
     )
