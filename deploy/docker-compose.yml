@@ -1,7 +1,7 @@
 services:
   # Local MQTT broker
   mosquitto:
-    image: eclipse-mosquitto:latest
+    image: eclipse-mosquitto:2.1
     container_name: mqtt-broker
     restart: unless-stopped
     ports:

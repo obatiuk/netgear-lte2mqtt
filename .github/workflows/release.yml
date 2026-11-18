@@ -11,7 +11,10 @@ on:
 
 permissions:
   contents: read
-  packages: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   NODE_OPTIONS: "--no-deprecation"
@@ -26,6 +29,9 @@ env:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       # Fetch full Git history and tags so BUILD_VERSION resolves accurately
       - name: Checkout repository
@@ -40,9 +46,9 @@ jobs:
           cache: "pip"
           cache-dependency-path: "Pipfile"
 
-      # Run verification suite before authenticating or publishing images
-      - name: Run format, lint, audit, and unit tests
-        run: make build
+      # Run non-mutating verification suite before authenticating or publishing images
+      - name: Run non-mutating verification checks
+        run: make check
 
       # Authenticate with GHCR for branch and release tag pushes
       - name: Log in to GitHub Container Registry

@@ -17,6 +17,8 @@ logger = logging.getLogger(__name__)
 MODEM_HTTP_TIMEOUT = 10
 INITIAL_PLACEHOLDER_MAX_ATTEMPTS = 3
 INITIAL_PLACEHOLDER_RETRY_DELAY = 2
+SECONDS_PER_MINUTE = 60
+MINUTES_PER_HOUR = 60
 HEARTBEAT_FILE = Path("/tmp/healthcheck")
 STATE_TRACKED_KEYS = ("wire_connected", "mobile_connected", "upstream", "connection_text", "roaming")
 
@@ -49,8 +51,8 @@ def _resolve_topic(topic: str, status: Mapping[str, Any] | None) -> str:
 
 def _format_seconds(seconds: int) -> str:
     """Formats seconds into human-readable H M S."""
-    minutes, secs = divmod(seconds, 60)
-    hours, mins = divmod(minutes, 60)
+    minutes, secs = divmod(seconds, SECONDS_PER_MINUTE)
+    hours, mins = divmod(minutes, MINUTES_PER_HOUR)
     h_unit = "hour" if hours == 1 else "hours"
     m_unit = "minute" if mins == 1 else "minutes"
     s_unit = "second" if secs == 1 else "seconds"

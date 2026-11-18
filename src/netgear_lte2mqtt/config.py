@@ -4,10 +4,17 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-# Default configuration values
+# Required environment variable names and default configuration values
+REQUIRED_ENV_VARS = ("MODEM_HOST", "MODEM_PASSWORD", "MQTT_HOST")
+DEFAULT_HOST_FIELD_NAME = "host"
 DEFAULT_MQTT_TOPIC = "netgear-lte2mqtt/state"
 DEFAULT_MQTT_PORT = "1883"
 DEFAULT_MQTT_CLIENT_ID = "netgear-lte2mqtt"
+DEFAULT_MQTT_USERNAME = ""
+DEFAULT_MQTT_PASSWORD = ""
+DEFAULT_MQTT_TLS = "false"
+DEFAULT_MQTT_VALIDATE_CERT = "false"
+DEFAULT_MQTT_CA_CERT_PATH = ""
 DEFAULT_MQTT_CONNECTION_TIMEOUT = "60"
 DEFAULT_MQTT_MAX_RETRIES = "5"
 DEFAULT_MQTT_PUBLISH_INTERVAL = "60"
@@ -62,7 +69,7 @@ class Config:
         }
 
 
-def _validate_host(host: str, field_name: str = "host") -> str:
+def _validate_host(host: str, field_name: str = DEFAULT_HOST_FIELD_NAME) -> str:
     """Validates that the host string is a non-empty hostname or IP without a URL scheme."""
     if not isinstance(host, str) or not host.strip():
         raise ConfigError(f"Invalid {field_name}: '{host}'")
@@ -161,26 +168,25 @@ def _parse_bool(s: str, error_msg: str) -> bool:
 
 def get_config() -> Config:
     """Reads configuration from environment variables and returns a validated Config object."""
-    required_vars = (
-        "MODEM_HOST",
-        "MODEM_PASSWORD",
-        "MQTT_HOST",
-    )
-
-    for var in required_vars:
+    for var in REQUIRED_ENV_VARS:
         if var not in os.environ:
             raise ConfigError(f"Required environment variable '{var}' not set.")
 
-    mqtt_username = os.environ.get("MQTT_USERNAME", "").strip()
-    mqtt_password = os.environ.get("MQTT_PASSWORD", "")
+    mqtt_username = os.environ.get("MQTT_USERNAME", DEFAULT_MQTT_USERNAME).strip()
+    mqtt_password = os.environ.get("MQTT_PASSWORD", DEFAULT_MQTT_PASSWORD)
     if mqtt_password and not mqtt_username:
         raise ConfigError("MQTT_USERNAME must be set when MQTT_PASSWORD is provided.")
 
-    mqtt_tls = _parse_bool(os.environ.get("MQTT_TLS", "false"), "MQTT_TLS must be boolean ('true' or 'false').")
-    mqtt_validate_cert = _parse_bool(
-        os.environ.get("MQTT_VALIDATE_CERT", "false"), "MQTT_VALIDATE_CERT must be boolean ('true' or 'false')."
+    mqtt_tls = _parse_bool(
+        os.environ.get("MQTT_TLS", DEFAULT_MQTT_TLS), "MQTT_TLS must be boolean ('true' or 'false')."
     )
-    mqtt_ca_cert_path = _validate_ca_cert_path(os.environ.get("MQTT_CA_CERT_PATH", ""), mqtt_tls=mqtt_tls)
+    mqtt_validate_cert = _parse_bool(
+        os.environ.get("MQTT_VALIDATE_CERT", DEFAULT_MQTT_VALIDATE_CERT),
+        "MQTT_VALIDATE_CERT must be boolean ('true' or 'false').",
+    )
+    mqtt_ca_cert_path = _validate_ca_cert_path(
+        os.environ.get("MQTT_CA_CERT_PATH", DEFAULT_MQTT_CA_CERT_PATH), mqtt_tls=mqtt_tls
+    )
 
     return Config(
         MODEM_HOST=_validate_host(os.environ["MODEM_HOST"], "MODEM_HOST"),

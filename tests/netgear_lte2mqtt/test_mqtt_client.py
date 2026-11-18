@@ -194,6 +194,26 @@ class TestMqttClient:
         assert mock_client.connect.call_count == 1
         mock_client.loop_start.assert_not_called()
 
+    @pytest.mark.asyncio
+    @patch("netgear_lte2mqtt.mqtt_client.Client")
+    async def test_unlimited_retries_logs_ascii_unlimited_label(
+        self, mock_client_cls: MagicMock, mock_config: Config
+    ) -> None:
+        # Verify MQTT_MAX_RETRIES=0 logs plain-ASCII unlimited retry progress
+        mock_client = mock_client_cls.return_value
+        mock_client.connect.side_effect = [RuntimeError("Transient"), None]
+        unlimited_config = replace(mock_config, MQTT_MAX_RETRIES=0)
+        client = MqttClient(unlimited_config)
+
+        with (
+            patch("asyncio.sleep", return_value=None),
+            patch("netgear_lte2mqtt.mqtt_client.logger.warning") as mock_log_warning,
+        ):
+            await client.connect()
+
+        mock_log_warning.assert_called_once()
+        assert "attempt 1/unlimited failed" in mock_log_warning.call_args.args[0]
+
     @patch("netgear_lte2mqtt.mqtt_client.Client")
     def test_publish_skipped_when_session_inactive(self, mock_client_cls: MagicMock, mock_config: Config) -> None:
         # Regression: Verify publish_status does not queue QoS 1 messages while disconnected

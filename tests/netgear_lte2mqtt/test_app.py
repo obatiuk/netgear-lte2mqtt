@@ -325,9 +325,10 @@ class TestMonitorApp:
     @patch("netgear_lte2mqtt.app.MqttClient")
     @patch("netgear_lte2mqtt.app.ModemClient")
     async def test_stop_during_startup_aborts_before_polling(
-        self, mock_modem_cls: MagicMock, mock_mqtt_cls: MagicMock, mock_config: Config
+        self, mock_modem_cls: MagicMock, mock_mqtt_cls: MagicMock, mock_config: Config, tmp_path: Path
     ) -> None:
-        # Regression: Verify shutdown signal during MQTT startup exits cleanly without polling or marking healthy
+        # Regression: Verify shutdown signal during MQTT startup exits cleanly without polling and removes readiness
+        heartbeat_file = tmp_path / "healthcheck"
         mock_mqtt = mock_mqtt_cls.return_value
         mock_modem = mock_modem_cls.return_value
         mock_modem.login = AsyncMock()
@@ -338,7 +339,9 @@ class TestMonitorApp:
 
         mock_mqtt.connect = AsyncMock(side_effect=stop_during_connect)
 
-        await app.run()
+        with patch.object(app_module, "HEARTBEAT_FILE", heartbeat_file):
+            await app.run()
+            assert check_health() is False
 
         mock_modem.login.assert_not_awaited()
         mock_mqtt.publish_status.assert_not_called()

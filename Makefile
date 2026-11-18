@@ -46,6 +46,7 @@ export PROJECT_NAME := $(notdir $(PROJECT_ROOT))
 export BUILD_VERSION ?= $(shell git describe --tags --exact-match 2>/dev/null || echo latest)
 
 BUILD_TAG ?= $(PROJECT_NAME):$(BUILD_VERSION)
+MOSQUITTO_IMAGE := eclipse-mosquitto:2.1
 MOSQUITTO_CONTAINER := mqtt-broker
 OCI_SOURCE_LABEL := org.opencontainers.image.source=https://github.com/obatiuk/$(PROJECT_NAME)
 
@@ -137,9 +138,17 @@ lint: | $(FLAG_FILE) ## Run Ruff linter and Pyright type checker
 	@$(PYTHON) -m ruff check --fix $(RUFF_TARGETS)
 	@$(PYTHON) -m pyright
 
-.PHONY: check
-check: | $(FLAG_FILE) ## Audit Python dependencies for vulnerabilities
+.PHONY: audit
+audit: | $(FLAG_FILE) ## Audit Python dependencies for vulnerabilities
 	@$(PIPENV) audit
+
+.PHONY: check
+check: | $(FLAG_FILE) ## Run non-mutating format, lint, type, audit, and test checks
+	@$(PYTHON) -m ruff format --check $(RUFF_TARGETS)
+	@$(PYTHON) -m ruff check $(RUFF_TARGETS)
+	@$(PYTHON) -m pyright
+	@$(PIPENV) audit
+	@$(PYTHON) -m pytest $(TESTS_DIR)
 
 .PHONY: fix-audit
 fix-audit: | $(FLAG_FILE) ## Auto-fix vulnerable dependencies and relock
@@ -153,7 +162,7 @@ test: | $(FLAG_FILE) ## Run unit tests with coverage report
 ##@ Build
 
 .PHONY: build
-build: format lint check test $(SOURCES) ## Run format, lint, dependency audit, and unit tests
+build: format lint audit test $(SOURCES) ## Run format, lint, dependency audit, and unit tests
 
 .PHONY: docker-build
 docker-build: build $(REQ_FILE) $(DOCKER_FILE) ## Build container image locally
@@ -162,7 +171,7 @@ docker-build: build $(REQ_FILE) $(DOCKER_FILE) ## Build container image locally
 
 .PHONY: docker-start
 docker-start: $(ENV_FILE) docker-build docker-stop ## Run local Mosquitto broker and service container
-	@$(DOCKER) run -d --rm --name $(MOSQUITTO_CONTAINER) --network host eclipse-mosquitto:latest \
+	@$(DOCKER) run -d --rm --name $(MOSQUITTO_CONTAINER) --network host $(MOSQUITTO_IMAGE) \
 		sh -c 'printf "%s\n" "listener 1883" "allow_anonymous true" "log_dest stdout" "log_type all" \
 		>/tmp/mosquitto.conf && exec /usr/sbin/mosquitto -c /tmp/mosquitto.conf'
 	@trap '$(DOCKER) rm -f $(MOSQUITTO_CONTAINER) >/dev/null 2>&1 || true' EXIT; \

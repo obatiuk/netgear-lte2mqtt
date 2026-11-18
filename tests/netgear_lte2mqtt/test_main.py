@@ -7,7 +7,11 @@ import pytest
 
 from netgear_lte2mqtt.main import main
 
-DOCKERFILE_PATH = Path(__file__).resolve().parents[2] / "deploy" / "Dockerfile"
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+DOCKERFILE_PATH = PROJECT_ROOT / "deploy" / "Dockerfile"
+MAKEFILE_PATH = PROJECT_ROOT / "Makefile"
+WORKFLOW_PATH = PROJECT_ROOT / ".github" / "workflows" / "release.yml"
+SRC_DIR = PROJECT_ROOT / "src" / "netgear_lte2mqtt"
 DURATION_TOKEN_RE = re.compile(r"(\d+(?:\.\d+)?)(ns|us|\u00b5s|ms|s|m|h)")
 DURATION_UNIT_SECONDS = {
     "ns": 1e-9,
@@ -123,3 +127,41 @@ class TestMain:
                     assert int(value) >= 1
                 case _:
                     pytest.fail(f"Unknown HEALTHCHECK option: --{flag}")
+
+    def test_ci_and_makefile_use_non_mutating_check_gate(self) -> None:
+        # Verify Makefile check target is non-mutating and GitHub Actions CI invokes make check
+        makefile_lines = MAKEFILE_PATH.read_text(encoding="utf-8").splitlines()
+        check_recipe: list[str] = []
+        in_check = False
+        for line in makefile_lines:
+            if line.startswith("check:"):
+                in_check = True
+                continue
+            if in_check:
+                if line.startswith("\t"):
+                    check_recipe.append(line.strip())
+                elif line.strip():
+                    break
+
+        joined_check = "\n".join(check_recipe)
+        assert "ruff format --check" in joined_check
+        assert "ruff check" in joined_check
+        assert "--fix" not in joined_check
+        assert "pyright" in joined_check
+        assert "audit" in joined_check
+        assert "pytest" in joined_check
+
+        workflow_text = WORKFLOW_PATH.read_text(encoding="utf-8")
+        top_header, _, jobs_section = workflow_text.partition("\njobs:\n")
+        assert "run: make check" in workflow_text
+        assert "run: make build" not in workflow_text
+        assert "concurrency:" in top_header
+        assert "cancel-in-progress: ${{ github.event_name == 'pull_request' }}" in top_header
+        assert "packages: write" not in top_header
+        assert "packages: write" in jobs_section
+
+    def test_python_sources_are_plain_ascii(self) -> None:
+        # Verify Python production modules contain only plain ASCII characters
+        for py_file in sorted(SRC_DIR.glob("*.py")):
+            content = py_file.read_text(encoding="utf-8")
+            assert content.isascii(), f"Non-ASCII character found in {py_file.name}"

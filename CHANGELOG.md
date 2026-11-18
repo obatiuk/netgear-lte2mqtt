@@ -2,6 +2,8 @@
 
 ## dev
 
+- Run non-mutating verification checks in `CI` with job-scoped registry permissions and pull request concurrency, pin
+  the `Mosquitto` container image version, and log unlimited `MQTT` connection retries in plain `ASCII`
 - Omit the zero-duration container healthcheck start period so container image builds succeed
 - Mark the service healthy immediately at startup before external network connections and shorten the container
   healthcheck interval

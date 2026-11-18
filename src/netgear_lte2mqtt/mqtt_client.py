@@ -23,6 +23,7 @@ BACKOFF_BASE = 2
 MAX_BACKOFF_SECONDS = 60
 PUBLISH_TIMEOUT_SECONDS = 5.0
 EXPIRY_INTERVAL_MULTIPLIER = 3
+UNLIMITED_RETRIES_LABEL = "unlimited"
 EMPTY_STATUS_PAYLOAD = json.dumps({})
 
 
@@ -137,7 +138,9 @@ class MqttClient:
                     logger.error(f"Failed to connect to MQTT broker after {connect_attempts} attempts")
                     raise
 
-                max_retries_label = str(self._config.MQTT_MAX_RETRIES) if self._config.MQTT_MAX_RETRIES > 0 else "∞"
+                max_retries_label = (
+                    str(self._config.MQTT_MAX_RETRIES) if self._config.MQTT_MAX_RETRIES > 0 else UNLIMITED_RETRIES_LABEL
+                )
                 wait_time = min(BACKOFF_BASE ** (connect_attempts - 1), MAX_BACKOFF_SECONDS)
                 logger.warning(
                     f"MQTT connection attempt {connect_attempts}/{max_retries_label} failed: {e}. "
